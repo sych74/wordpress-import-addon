@@ -7,7 +7,7 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 2391;
   
-  const envName = "env-0749687";
+  const envName = "env-0862548";
   const ssh_host = "213.32.82.85";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -250,7 +250,8 @@ actions:
               "wpenv_file_content": wpenv_file_content.body,
               "projects_file_content": projects_file_content.body,
               "subscriptionId": subscriptionId,
-              "userSession": userSession
+              "userSession": userSession,
+              "targetUID": targetUID
             }
           });
         }        
