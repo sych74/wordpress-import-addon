@@ -1,0 +1,179 @@
+type: install
+name: Standalone Pro
+baseUrl: https://raw.githubusercontent.com/sych74/import-addon/WP-349
+  
+globals:
+  master_env: ${settings.master_env}
+  wp_admin_pass: ${fn.password(10)}
+  db_user: user-${fn.random}
+  db_pass: ${fn.password(10)}
+  env_name: wp-${fn.random}
+  envGroups: "${settings.envGroups}"
+  project_id: "${settings.project_id}"
+  migration_dir: "/home/jelastic/migrator"
+  wpenv_file: "/home/jelastic/migrator/.wpenv"
+  projects_file: "/home/jelastic/migrator/projects.json"
+  
+onInstall:
+  - createEnv
+  - addConfigs
+  - installDependencies
+  - importProject
+  - getProjectName
+  - if ('${globals.migrateStatus}' == 'OK'): 
+    - successOut
+    - api: env.control.SetEnvDisplayName
+      envName: ${globals.env_name}
+      session: ${settings.userSession}
+      displayName: ${globals.projectName}-[SUCCESS]
+
+  - if ('${globals.migrateStatus}' == 'FAIL'):
+    - failedOut
+    - api: env.control.SetEnvDisplayName
+      envName: ${globals.env_name}
+      session: ${settings.userSession}
+      displayName: ${globals.projectName}-[FAILED]
+
+actions:
+  createEnv:
+    script: |
+      return jelastic.billing.subscription.InstallProduct({
+          appid: 'dashboard', 
+          session: '${settings.userSession}', 
+          subscriptionId: '${settings.subscriptionId}',
+          settings: { 
+            envName: '${globals.env_name}' 
+          }      
+        });   
+  
+  installDependencies:
+    - script: |
+        var envInfo = jelastic.env.control.GetEnvInfo({
+          envName: '${globals.env_name}', 
+          session: '${settings.userSession}'
+        });
+        if (envInfo.result != 0) return envInfo;
+        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
+          if (k[i].nodeGroup == 'cp')
+            master_id = k[i].id;
+        }       
+        var cmd1 = "rpm -qa | grep -qw sshpass || yum install sshpass -y;";
+        var cmd2 = "echo 'WordPress migrator add-on logs' > /var/log/migrator.log;";
+        var cmd3 = "chown jelastic /var/log/migrator.log;";
+        return api.environment.control.ExecCmdById({
+          envName: '${globals.env_name}', 
+          session: '${settings.userSession}',
+          nodeId: master_id,
+          userName: "root",
+          commandList: toJSON([{"command": cmd1}, {"command": cmd2}, {"command": cmd3}])
+        });
+
+  addConfigs:
+    - projects_file_content: ${settings.projects_file_content}
+      wpenv_file_content: ${settings.wpenv_file_content}
+      script: |
+        var envInfo = jelastic.env.control.GetEnvInfo({
+          envName: '${globals.env_name}', 
+          session: '${settings.userSession}'
+        });
+        if (envInfo.result != 0) return envInfo;
+        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
+          if (k[i].nodeGroup == 'cp')
+            master_id = k[i].id;
+        }       
+        var cmd1 = "[[ -d ${globals.migration_dir} ]] || mkdir ${globals.migration_dir};";
+        var cmd2 = "wget ${baseUrl}/scripts/migrator.sh -O ${globals.migration_dir}/migrator.sh;";
+        var cmd3 = "echo '" + wpenv_file_content + "'  > ${globals.wpenv_file};";
+        var cmd4 = "echo 'PROJECT_NAME=${settings.project_id}' >> ${globals.wpenv_file};";
+        var cmd5 = "echo '" + projects_file_content + "'  > ${globals.projects_file};";
+        return api.environment.control.ExecCmdById({
+          envName: '${globals.env_name}', 
+          session: '${settings.userSession}',
+          nodeId: master_id, 
+          commandList: toJSON([{"command": cmd1}, {"command": cmd2}, {"command": cmd3}, {"command": cmd4}, {"command": cmd5}])
+        });
+
+  getProjectName:
+    - script: | 
+        var envInfo = jelastic.env.control.GetEnvInfo({
+          envName: '${globals.env_name}',
+          session: '${settings.userSession}'
+        });
+        if (envInfo.result != 0) return envInfo;
+        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
+          if (k[i].nodeGroup == 'cp')
+            master_id = k[i].id;
+        }       
+        var cmd1 = "bash ${globals.migration_dir}/migrator.sh getProjectName --instance-id=${globals.project_id}";       
+        var resp = api.environment.control.ExecCmdById({
+          envName: '${globals.env_name}',
+          session: '${settings.userSession}',
+          nodeId: master_id, 
+          commandList: toJSON([{"command": cmd1}])
+        });
+        var respOut = JSON.parse(resp.responses[0]).out;
+        return { result : 0, onAfterReturn: { setGlobals: { projectName: respOut } } };
+
+  importProject:
+    - script: | 
+        var migrateStatus = "OK";
+        var envInfo = jelastic.env.control.GetEnvInfo({
+          envName: '${globals.env_name}', 
+          session: '${settings.userSession}'
+        });
+        if (envInfo.result != 0) return envInfo;
+        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
+          if (k[i].nodeGroup == 'cp')
+            master_id = k[i].id;
+        }       
+        var cmd1 = "bash ${globals.migration_dir}/migrator.sh importProject --instance-id=${globals.project_id}";       
+        var resp = api.environment.control.ExecCmdById({
+          envName: '${globals.env_name}',
+          session: '${settings.userSession}',
+          nodeId: master_id, 
+          commandList: toJSON([{"command": cmd1}])
+        });
+        if (resp.result != 0)
+          migrateStatus = "FAIL"
+        try {
+          respOut = JSON.parse(resp.responses[0].out) || [];
+        } catch (ex) {
+          migrateStatus = "FAIL"
+        }
+        if (respOut.result != 0)
+          migrateStatus = "FAIL"
+        return { result : 0, onAfterReturn: { setGlobals: { migrateStatus: migrateStatus } } };
+        
+  successOut:
+    script: |
+        var envInfo = jelastic.env.control.GetEnvInfo({
+          envName: '${globals.master_env}'
+        });
+        if (envInfo.result != 0) return envInfo;
+        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
+          if (k[i].nodeGroup == 'cp')
+            master_id = k[i].id;
+        }       
+        var cmd1 = "echo 'Migrated status [SUCCESS]: Environment name - ${globals.env_name}: Project name - ${globals.projectName}' >> /var/log/migrator.log";       
+        return api.environment.control.ExecCmdById({
+          envName: '${globals.master_env}',
+          nodeId: master_id, 
+          commandList: toJSON([{"command": cmd1}])
+        });
+        
+  failedOut:
+    script: |
+        var envInfo = jelastic.env.control.GetEnvInfo({
+          envName: '${globals.master_env}'
+        });
+        if (envInfo.result != 0) return envInfo;
+        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
+          if (k[i].nodeGroup == 'cp')
+            master_id = k[i].id;
+        }       
+        var cmd1 = "echo 'Migrated status [FAILED]: Environment name - ${globals.env_name}: Project name - ${globals.projectName}' >> /var/log/migrator.log";       
+        return api.environment.control.ExecCmdById({
+          envName: '${globals.master_env}',
+          nodeId: master_id, 
+          commandList: toJSON([{"command": cmd1}])
+        });
