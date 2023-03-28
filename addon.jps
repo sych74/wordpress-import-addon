@@ -1,4 +1,4 @@
-type: update
+type: import
 name: WordPress Migrator
 logo: /images/migrate-logo.svg
 description: Migrate your web site from remote WordPress installation
