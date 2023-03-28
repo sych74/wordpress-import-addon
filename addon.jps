@@ -1,0 +1,257 @@
+type: update
+name: WordPress Migrator
+logo: /images/migrate-logo.svg
+description: Migrate your web site from remote WordPress installation
+baseUrl: https://raw.githubusercontent.com/sych74/import-addon/WP-349
+onBeforeInit: | 
+  // CHANGE VARIABLES
+  const targetUID = 2391;
+  
+  const envName = "env-0749687";
+  const ssh_host = "213.32.82.85";
+  const ssh_port = 22;
+  const ssh_user = "root";
+  const ssh_pass = "V97hpaFfrbFR7EhE";
+  
+  
+  // NOT EDIT 
+  // init vars
+  var resp,
+      containerID;
+  
+  // check migrator env
+  resp = jelastic.env.control.GetEnvInfo(envName, session);
+  if (resp.result != 0) return resp;
+  
+  for (var i = 0, k = resp.nodes; i < k.length; i++) {
+  if (k[i].nodeGroup == 'cp')
+    containerID = k[i].id;
+  }    
+  
+  //TODO: handle errors
+  // load projects
+  var command = "bash /home/jelastic/migrator/migrator.sh getRemoteProjects --ssh-user=" + ssh_user + " --ssh-password=" + ssh_pass + " --ssh-host=" + ssh_host + " --ssh-port=" + ssh_port + " --format=json"; 
+  resp = api.env.control.ExecCmdById(envName, session, containerID, toJSON([{ "command": command }]), true);
+  if (resp.result != 0) return resp;
+  
+  resp = jelastic.env.control.ExecCmdById(envName, session, containerID, toJSON([{ command: 'cat /home/jelastic/migrator/projects.json' }]), true);
+  if ( resp.result != 0 ) return resp;
+  
+  var projectList = JSON.parse(resp.responses[0].out);  
+  var projectListPrepared = prepareProjects(projectList);
+  
+  // load subscriptions
+  resp = jelastic.administration.subscription.GetSubscriptions({
+    appid: "cluster", 
+    session: session, 
+    uid: targetUID,
+    status: "ACTIVE",
+    expandFields: "*"
+  });
+  if ( resp.result != 0 ) return resp;  
+  
+  var subscriptions = prepareSubscriptions(resp.array);
+  
+  // utils
+  function prepareProjects(values) {
+    var aResultValues = [];
+    values = values || [];
+    
+    for (var i = 0, n = values.length; i < n; i++) {
+      aResultValues.push({
+        caption: values[i].ownerId + "  | " + values[i].siteUrl + " | " + values[i].fullPath,
+        value: values[i].id
+      });
+    }
+    return aResultValues;
+  }
+  
+  function prepareSubscriptions(values) {
+    var aResultValues = [],
+        item,
+        servicePlanItem;
+        
+    values = values || [];
+   
+    for (var i = 0, n = values.length; i < n; i++) {
+      item = values[i];
+      servicePlanItem = item.items[0];
+      
+      aResultValues.push({
+        caption: item.product.displayName + " - " + servicePlanItem.servicePlan.displayName + "    (" + servicePlanItem.resources.length + "/" + servicePlanItem.quantity + ")",
+        value: item.id
+      });
+    }
+    
+    return aResultValues;
+  }
+  // format settings
+  var fields = [];
+  
+  fields.push({
+    "caption": "Target User ID",
+    "type": "displayfield",
+    "tooltip": "",          
+    "required": false
+  }, {
+    "caption": "Target User ID",
+    "type": "string",    
+    "name": "targetUID",
+    "required": true,
+    "hideLabel": true,
+    "default": targetUID
+  }, {
+    "type": "string",    
+    "required": false,
+    "hideLabel": true,
+    "disabled": true,
+    "default": jelastic.system.admin.GetUserInfo(appid, session, targetUID).email
+  },{
+    "caption": "Projects",
+    "type": "displayfield",
+    "tooltip": "Select the project which you want to import",          
+    "required": false
+  },{
+    "caption": "Projects",
+    "type": "list",
+    "tooltip": "Select the project which you want to import",          
+    "name": "projects",
+    "required": true,
+    "multiSelect": true,
+    "hideLabel": true,
+    "values": projectListPrepared
+  },{
+    "caption": "Subscription",
+    "type": "displayfield",
+    "tooltip": "Select the subscription to which you want to import",          
+    "required": false
+  },{
+    "caption": "Subscription",
+    "type": "list",
+    "tooltip": "Select the subscription to which you want to import",          
+    "name": "subscription",
+    "required": true,
+    "hideLabel": true,
+    "values": subscriptions
+  }, {
+    "type": "string",    
+    "name": "envName",
+    "required": true,
+    "hidden": true,
+    "default": envName
+  }, {
+    "type": "string",    
+    "name": "containerID",
+    "required": true,
+    "hidden": true,
+    "default": containerID
+  })
+  return {
+    result: 0,
+    settings : {
+      fields: fields
+    }
+  };
+targetNodes:
+  nodeType:
+    - nginxphp
+    - nginxphp-dockerized
+  
+responses:    
+  701:
+    type: warning
+    message: SSH connection is failed. Please check SSH connection details!
+    
+  702:
+    type: warning
+    message: WP Toolkit utility isnt activated for this account. Please activate!  
+    
+  13001:
+    type: warning
+    message: Subscription not found     
+    
+  13002:
+    type: warning
+    message: "Validation: selected project count is greater than free slots in the subscription!"
+    
+  99:
+    type: warning
+    message: |
+      Errors were discovered during the project migration.
+      Please check the **/var/log/migrator.log** log file on master node of CP layer for details.
+onInstall:
+  - log: '${settings}'
+  - deployProjects
+globals:
+  migration_dir: /home/jelastic/migrator
+  wpenv_file: /home/jelastic/migrator/.wpenv
+  projects_file: /home/jelastic/migrator/projects.json
+actions:         
+  deployProjects:
+    - script: |
+        var targetUID = '${settings.targetUID}',
+            subscriptionId = '${settings.subscription}',
+            projectList = '${settings.projects}'.split(','),
+            envName = '${settings.envName}',
+            actions = [],
+            containerID = '${settings.containerID}';
+            
+        function validateInstallationCount(subscription, count) {
+          var servicePlanItem,
+              availableCount,
+              result = { result: 0 };
+          
+          if (!subscription) {
+            return { result: 13001 };
+          }
+        
+          servicePlanItem = subscription.items[0];
+          availableCount = servicePlanItem.quantity - servicePlanItem.resources.length;
+          
+          if (count > availableCount) {
+            result = { result: 13002 };
+          }
+          return result;
+        }            
+      
+        
+        // load subscription
+        resp = jelastic.administration.subscription.GetSubscriptions({
+          appid: "cluster", 
+          session: session, 
+          id: subscriptionId,
+          expandFields: "*"
+        });
+        if (resp.result != 0) return resp; 
+        
+        // validate count
+        resp = validateInstallationCount(resp.array[0], projectList.length);
+        if (resp.result != 0) return resp;
+        
+        // Signin As Client
+        resp = jelastic.system.admin.SigninAsClient("cluster", session, targetUID);
+        if (resp.result != 0) return resp;
+           
+        const userSession = resp.session;
+   
+        // var envGroups = eval('(' + MANIFEST + ')').envGroups, actions = [], projectList = [];
+        
+        var wpenv_file_content = jelastic.env.file.Read(envName, session, '${globals.wpenv_file}', null, null, containerID);
+        if (wpenv_file_content.result != 0) return wpenv_file_content;
+        var projects_file_content = jelastic.env.file.Read(envName, session, '${globals.projects_file}', null, null, containerID);        
+        if (projects_file_content.result != 0) return projects_file_content;
+        
+        for (var i = 0, n = projectList.length; i < n; i ++) {
+          actions.push({
+            jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
+            settings: {
+              "master_env": envName,
+              "project_id": projectList[i],
+              "wpenv_file_content": wpenv_file_content.body,
+              "projects_file_content": projects_file_content.body,
+              "subscriptionId": subscriptionId,
+              "userSession": userSession
+            }
+          });
+        }        
+        return { result: 0, onAfterReturn: { 'marketplace.jps.install': actions } };
