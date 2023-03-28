@@ -1,6 +1,6 @@
 type: install
 name: Standalone Pro
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/master
+baseUrl: https://raw.githubusercontent.com/sych74/wordpress-import-addon/master
   
 globals:
   master_env: ${settings.master_env}
@@ -25,7 +25,7 @@ onInstall:
     - api: env.control.SetEnvDisplayName
       envName: ${globals.env_name}
       session: ${settings.userSession}
-      displayName: ${globals.projectName}-[SUCCESS]
+      displayName: ${globals.projectName}
 
   - if ('${globals.migrateStatus}' == 'FAIL'):
     - failedOut
@@ -154,7 +154,7 @@ actions:
           if (k[i].nodeGroup == 'cp')
             master_id = k[i].id;
         }       
-        var cmd1 = "echo 'Migrated status [SUCCESS]: Environment name - ${globals.env_name}: Project name - ${globals.projectName}' >> /var/log/migrator.log";       
+        var cmd1 = "echo '[SUCCESS]: Environment name - ${globals.env_name}: Project name - ${globals.projectName}' >> /var/log/migrator.log";       
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
           nodeId: master_id, 
@@ -171,7 +171,7 @@ actions:
           if (k[i].nodeGroup == 'cp')
             master_id = k[i].id;
         }       
-        var cmd1 = "echo 'Migrated status [FAILED]: Environment name - ${globals.env_name}: Project name - ${globals.projectName}' >> /var/log/migrator.log";       
+        var cmd1 = "echo '[FAILED]: Environment name - ${globals.env_name}: Project name - ${globals.projectName}' >> /var/log/migrator.log";       
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
           nodeId: master_id, 

@@ -1,8 +1,8 @@
-type: import
+type: install
 name: WordPress Migrator
 logo: /images/migrate-logo.svg
 description: Migrate your web site from remote WordPress installation
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/master
+baseUrl: https://raw.githubusercontent.com/sych74/wordpress-import-addon/master
 onBeforeInit: | 
   // CHANGE VARIABLES
   const targetUID = 2391;
