@@ -1,0 +1,25 @@
+type: install
+name: WordPress Migrator Env
+logo: /images/migrate-logo.svg
+description: Migrate your web site from remote WordPress installation
+baseUrl: https://raw.githubusercontent.com/sych74/import-addon/WP-349
+nodes:
+  - nodeType: nginxphp
+    nodeGroup: cp
+  
+globals:
+  migration_dir: /home/jelastic/migrator
+  wpenv_file: /home/jelastic/migrator/.wpenv
+  projects_file: /home/jelastic/migrator/projects.json
+onInstall:
+  - installDependencies
+actions:
+  installDependencies:
+    - cmd[cp]: |-
+        rpm -qa | grep -qw sshpass || yum install sshpass -y;
+        echo "WordPress migrator add-on logs" > /var/log/migrator.log;
+        chown jelastic /var/log/migrator.log;
+      user: root
+    - cmd[${nodes.cp.master.id}]: |-
+        [[ -d ${globals.migration_dir} ]] || mkdir ${globals.migration_dir};
+        wget ${baseUrl}/scripts/migrator.sh -O ${globals.migration_dir}/migrator.sh;
