@@ -12,6 +12,7 @@ WEBROOT_DIR="/var/www/webroot/ROOT"
 WP_CONFIG="${WEBROOT_DIR}/wp-config.php"
 WP_ENV="${BASE_DIR}/.wpenv"
 WP_PROJECTS_LIST_JSON="projects.json"
+WP_PROJECTS_LIST_PHP_JSON="projectsPHP.json"
 WP_PROJECTS_LIST="projects.list"
 WP_CLI="${BASE_DIR}/wp"
 
@@ -184,8 +185,16 @@ createRemoteDbBackupWPCLI(){
 createRemoteDbBackupWPT(){
   local project=$1;
   local command="${SSH} \"${WPT} --wp-cli -instance-id ${project}  -- db export ${DB_BACKUP}\""
-  local message="Creating database backup by WP TOOLKIT on remote host"
+  local message="Creating database backup by WP TOOLKIT on remote host for instance-id ${project}"
   execSshAction "$command" "$message"
+}
+
+getRemotePHPversionWPT(){
+  local project=$1;
+  local command="${SSH} \"${WPT} --wp-cli -instance-id ${project}  -- eval 'echo PHP_VERSION;'\""
+  local message="Getting PHP version by WP TOOLKIT on remote host for instance-id ${project}"
+  local output=$(execSshReturn "$command" "$message")
+  echo $output
 }
 
 downloadProject(){
@@ -418,10 +427,29 @@ getRemoteProjects(){
     getRemoteProjectListWPT
     updateVariable WPT ${WPT}
   else
-    REMOTE_WP_CLI=$(installRemoteWP_CLI)
-    updateVariable REMOTE_WP_CLI ${REMOTE_WP_CLI}
-    getRemoteProjectListWP_CLI
+     echo ------------------------------
+#    REMOTE_WP_CLI=$(installRemoteWP_CLI)
+#    updateVariable REMOTE_WP_CLI ${REMOTE_WP_CLI}
+#    getRemoteProjectListWP_CLI
   fi
+
+  project_list=$(cat ${BASE_DIR}/${WP_PROJECTS_LIST_JSON});
+  project_list_php=$(jq -n '[]');
+
+  for project in $(echo "${project_list}" | jq -r '.[] | @base64'); do
+    _jq() {
+     echo "${project}" | base64 --decode | jq -r "${1}"
+    }
+    id=$(_jq '.id')
+    php_version=$(getRemotePHPversionWPT $id)
+    project_list_php=$(echo $project_list_php | jq \
+        --argjson id $id \
+        --arg php_version "$php_version" \
+      '. += [{"id": $id, "php_version": $php_version}]')
+  done
+
+  echo $project_list_php > ${BASE_DIR}/${WP_PROJECTS_LIST_PHP_JSON}
+
   [[ "x${FORMAT}" == "xjson" ]] && { getProjectList --format=json; } || { getProjectList; }
 
 }
