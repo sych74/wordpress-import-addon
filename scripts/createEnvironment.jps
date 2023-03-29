@@ -55,8 +55,7 @@ actions:
           }      
         });
       if (resp.result != 0) {
-        var error = resp.error;
-        return { result: resp.result, onAfterReturn: { responseOut: { "status": "ERROR", "message": error.replace(/'/, '') } } };
+        return { result: resp.result, onAfterReturn: { responseOut: { "status": "ERROR", "message": resp.replace(/'/, '') } } };
       }
       return {result: 0}
 
