@@ -134,7 +134,7 @@ actions:
         
   responseOut:
     script: |
-      var cmd = "echo `date` '[${this.status}]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name}\n${this.message}' >> /var/log/migrator.log";
+      var cmd = "echo `date` '[${this.status}] Target UID: ${globals.targetUID}, Project name: ${globals.projectName}, Environment name: ${globals.env_name}\n${this.message}' >> /var/log/migrator.log";
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
           nodeId: ${globals.master_id}, 
