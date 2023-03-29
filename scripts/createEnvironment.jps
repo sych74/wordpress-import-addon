@@ -51,8 +51,9 @@ actions:
           session: '${settings.userSession}', 
           subscriptionId: '${settings.subscriptionId}',
           settings: { 
-            envName: '${globals.env_name}',
-            "cdn_addon": "false"
+            "envName": "${globals.env_name}",
+            "cdn_addon": "false",
+            "php_engine": '${settings.php_engine}'
           }      
         });
       if (resp.result != 0) {
