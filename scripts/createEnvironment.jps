@@ -46,14 +46,19 @@ onInstall:
 actions:
   createEnv:
     script: |
-      return jelastic.billing.subscription.InstallProduct({
+      var resp = jelastic.billing.subscription.InstallProduct({
           appid: 'dashboard', 
           session: '${settings.userSession}', 
           subscriptionId: '${settings.subscriptionId}',
           settings: { 
             envName: '${globals.env_name}' 
           }      
-        });   
+        });
+      if (resp.result != 0) {
+        var error = resp.error;
+        return { result: resp.result, onAfterReturn: { responseOut: { "status": "ERROR", "message": error.replace(/'/, '') } } };
+      }
+      return {result: 0}
 
   getMasterId:
     - script: |
@@ -129,7 +134,7 @@ actions:
         
   responseOut:
     script: |
-      var cmd = "echo `date` '[${this.status}]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name} ${this.message}' >> /var/log/migrator.log";
+      var cmd = "echo `date` '[${this.status}]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name}\n${this.message}' >> /var/log/migrator.log";
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
           nodeId: ${globals.master_id}, 
