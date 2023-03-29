@@ -23,14 +23,18 @@ onInstall:
   - importProject
   - getProjectName
   - if ('${globals.migrateStatus}' == 'OK'): 
-    - successOut
+    - responseOut:
+        status: 'SUCCESS'
+        message: ''
     - api: env.control.SetEnvDisplayName
       envName: ${globals.env_name}
       session: ${settings.userSession}
       displayName: ${globals.projectName}
 
   - if ('${globals.migrateStatus}' == 'FAIL'):
-    - failedOut
+    - responseOut:
+        status: 'FAILED'
+        message: ''
     - api: env.control.SetEnvDisplayName
       envName: ${globals.env_name}
       session: ${settings.userSession}
@@ -123,20 +127,11 @@ actions:
           migrateStatus = "FAIL"
         return { result : 0, onAfterReturn: { setGlobals: { migrateStatus: migrateStatus } } };
         
-  successOut:
+  responseOut:
     script: |
-        var cmd1 = "echo '[SUCCESS]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name}' >> /var/log/migrator.log";       
+      var cmd = "echo `date` '[${this.status}]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name} ${this.message}' >> /var/log/migrator.log";
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
           nodeId: ${globals.master_id}, 
-          commandList: toJSON([{"command": cmd1}])
-        });
-        
-  failedOut:
-    script: |
-        var cmd1 = "echo '[FAILED]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name}' >> /var/log/migrator.log";       
-        return api.environment.control.ExecCmdById({
-          envName: '${globals.master_env}',
-          nodeId: ${globals.master_id}, 
-          commandList: toJSON([{"command": cmd1}])
+          commandList: toJSON([{"command": cmd}])
         });
