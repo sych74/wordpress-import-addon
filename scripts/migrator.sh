@@ -191,7 +191,7 @@ createRemoteDbBackupWPT(){
 
 getRemotePHPversionWPT(){
   local project=$1;
-  local command="${SSH} \"${WPT} --wp-cli -instance-id ${project}  -- db export ${DB_BACKUP}\""
+  local command="${SSH} \"${WPT} --wp-cli -instance-id ${project}  -- eval 'echo PHP_VERSION;'\""
   local message="Getting PHP version by WP TOOLKIT on remote host for instance-id ${project}"
   local output=$(execSshReturn "$command" "$message")
   echo $output
