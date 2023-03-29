@@ -17,6 +17,7 @@ globals:
   
 onInstall:
   - createEnv
+  - getMasterId
   - addConfigs
   - installDependencies
   - importProject
@@ -49,25 +50,26 @@ actions:
             envName: '${globals.env_name}' 
           }      
         });   
-  
-  installDependencies:
+
+  getMasterId:
     - script: |
-        var envInfo = jelastic.env.control.GetEnvInfo({
-          envName: '${globals.env_name}', 
-          session: '${settings.userSession}'
-        });
+        var envInfo = jelastic.env.control.GetEnvInfo({ envName: '${globals.env_name}', session: '${settings.userSession}' });
         if (envInfo.result != 0) return envInfo;
         for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
           if (k[i].nodeGroup == 'cp')
             master_id = k[i].id;
         }       
+        return { result : 0, onAfterReturn: { setGlobals: { master_id: master_id } } };
+
+  installDependencies:
+    - script: |
         var cmd1 = "rpm -qa | grep -qw sshpass || yum install sshpass -y;";
         var cmd2 = "echo 'WordPress migrator add-on logs' > /var/log/migrator.log;";
         var cmd3 = "chown jelastic /var/log/migrator.log;";
         return api.environment.control.ExecCmdById({
           envName: '${globals.env_name}', 
           session: '${settings.userSession}',
-          nodeId: master_id,
+          nodeId: ${globals.master_id},
           userName: "root",
           commandList: toJSON([{"command": cmd1}, {"command": cmd2}, {"command": cmd3}])
         });
@@ -76,15 +78,6 @@ actions:
     - projects_file_content: ${settings.projects_file_content}
       wpenv_file_content: ${settings.wpenv_file_content}
       script: |
-        var envInfo = jelastic.env.control.GetEnvInfo({
-          envName: '${globals.env_name}', 
-          session: '${settings.userSession}'
-        });
-        if (envInfo.result != 0) return envInfo;
-        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
-          if (k[i].nodeGroup == 'cp')
-            master_id = k[i].id;
-        }       
         var cmd1 = "[[ -d ${globals.migration_dir} ]] || mkdir ${globals.migration_dir};";
         var cmd2 = "wget ${baseUrl}/scripts/migrator.sh -O ${globals.migration_dir}/migrator.sh;";
         var cmd3 = "echo '" + wpenv_file_content + "'  > ${globals.wpenv_file};";
@@ -93,26 +86,17 @@ actions:
         return api.environment.control.ExecCmdById({
           envName: '${globals.env_name}', 
           session: '${settings.userSession}',
-          nodeId: master_id, 
+          nodeId: ${globals.master_id}, 
           commandList: toJSON([{"command": cmd1}, {"command": cmd2}, {"command": cmd3}, {"command": cmd4}, {"command": cmd5}])
         });
 
   getProjectName:
     - script: | 
-        var envInfo = jelastic.env.control.GetEnvInfo({
-          envName: '${globals.env_name}',
-          session: '${settings.userSession}'
-        });
-        if (envInfo.result != 0) return envInfo;
-        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
-          if (k[i].nodeGroup == 'cp')
-            master_id = k[i].id;
-        }       
         var cmd1 = "bash ${globals.migration_dir}/migrator.sh getProjectName --instance-id=${globals.project_id}";       
         var resp = api.environment.control.ExecCmdById({
           envName: '${globals.env_name}',
           session: '${settings.userSession}',
-          nodeId: master_id, 
+          nodeId: ${globals.master_id}, 
           commandList: toJSON([{"command": cmd1}])
         });
         var respOut = JSON.parse(resp.responses[0]).out;
@@ -121,20 +105,11 @@ actions:
   importProject:
     - script: | 
         var migrateStatus = "OK";
-        var envInfo = jelastic.env.control.GetEnvInfo({
-          envName: '${globals.env_name}', 
-          session: '${settings.userSession}'
-        });
-        if (envInfo.result != 0) return envInfo;
-        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
-          if (k[i].nodeGroup == 'cp')
-            master_id = k[i].id;
-        }       
         var cmd1 = "bash ${globals.migration_dir}/migrator.sh importProject --instance-id=${globals.project_id}";       
         var resp = api.environment.control.ExecCmdById({
           envName: '${globals.env_name}',
           session: '${settings.userSession}',
-          nodeId: master_id, 
+          nodeId: ${globals.master_id}, 
           commandList: toJSON([{"command": cmd1}])
         });
         if (resp.result != 0)
@@ -150,34 +125,18 @@ actions:
         
   successOut:
     script: |
-        var envInfo = jelastic.env.control.GetEnvInfo({
-          envName: '${globals.master_env}'
-        });
-        if (envInfo.result != 0) return envInfo;
-        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
-          if (k[i].nodeGroup == 'cp')
-            master_id = k[i].id;
-        }       
         var cmd1 = "echo '[SUCCESS]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name}' >> /var/log/migrator.log";       
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
-          nodeId: master_id, 
+          nodeId: ${globals.master_id}, 
           commandList: toJSON([{"command": cmd1}])
         });
         
   failedOut:
     script: |
-        var envInfo = jelastic.env.control.GetEnvInfo({
-          envName: '${globals.master_env}'
-        });
-        if (envInfo.result != 0) return envInfo;
-        for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
-          if (k[i].nodeGroup == 'cp')
-            master_id = k[i].id;
-        }       
         var cmd1 = "echo '[FAILED]: Target UID - ${globals.targetUID}: Project name - ${globals.projectName}: Environment name - ${globals.env_name}' >> /var/log/migrator.log";       
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
-          nodeId: master_id, 
+          nodeId: ${globals.master_id}, 
           commandList: toJSON([{"command": cmd1}])
         });
