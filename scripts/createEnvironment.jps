@@ -134,9 +134,17 @@ actions:
         
   responseOut:
     script: |
+      var envInfo = jelastic.env.control.GetEnvInfo({
+          envName: '${globals.master_env}'
+      });
+      if (envInfo.result != 0) return envInfo;
+      for (var i = 0, k = envInfo.nodes; i < k.length; i++) {
+        if (k[i].nodeGroup == 'cp')
+          master_id = k[i].id;
+      }       
       var cmd = "echo `date` '[${this.status}] Target UID: ${globals.targetUID}, Project name: ${globals.projectName}, Environment name: ${globals.env_name}\n${this.message}' >> /var/log/migrator.log";
         return api.environment.control.ExecCmdById({
           envName: '${globals.master_env}',
-          nodeId: ${globals.master_id}, 
+          nodeId: master_id, 
           commandList: toJSON([{"command": cmd}])
         });
