@@ -52,7 +52,7 @@ actions:
           subscriptionId: '${settings.subscriptionId}',
           settings: { 
             envName: '${globals.env_name}',
-            cdn-addon: 'false'
+            cdn-addon: "false"
           }      
         });
       if (resp.result != 0) {
