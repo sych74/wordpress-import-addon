@@ -2,7 +2,7 @@ type: install
 name: WordPress Migrator
 logo: /images/migrate-logo.svg
 description: Migrate your web site from remote WordPress installation
-baseUrl: https://raw.githubusercontent.com/sych74/wordpress-import-addon/master
+baseUrl: https://raw.githubusercontent.com/sych74/wordpress-import-addon/WP-272
 onBeforeInit: | 
   // CHANGE VARIABLES
   const targetUID = 2391;
@@ -194,7 +194,8 @@ actions:
             projectList = '${settings.projects}'.split(','),
             envName = '${settings.envName}',
             actions = [],
-            containerID = '${settings.containerID}';
+            containerID = '${settings.containerID}',
+            parts, projectPHPverion, enginePHP;
             
         function validateInstallationCount(subscription, count) {
           var servicePlanItem,
@@ -241,11 +242,20 @@ actions:
         var projects_file_content = jelastic.env.file.Read(envName, session, '${globals.projects_file}', null, null, containerID);        
         if (projects_file_content.result != 0) return projects_file_content;
         
+        // Getting php version for each of projects
+        resp = jelastic.env.control.ExecCmdById(envName, session, containerID, toJSON([{ command: 'cat /home/jelastic/migrator/projectsPHP.json' }]), true);
+        if ( resp.result != 0 ) return resp;
+
+        // Creating envs and migration projects
         for (var i = 0, n = projectList.length; i < n; i ++) {
+          projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
+          parts = projectPHPverion.split(".");     
+          enginePHP = "PHP" + parts.slice(0, 2).join(".");
           actions.push({
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
             settings: {
               "master_env": envName,
+              "php_engine": enginePHP,
               "project_id": projectList[i],
               "wpenv_file_content": wpenv_file_content.body,
               "projects_file_content": projects_file_content.body,
