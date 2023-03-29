@@ -52,7 +52,7 @@ actions:
           subscriptionId: '${settings.subscriptionId}',
           settings: { 
             "envName": "${globals.env_name}",
-            "cdn_addon": "false",
+            "cdn-addon": "false",
             "php_engine": '${settings.php_engine}'
           }      
         });
