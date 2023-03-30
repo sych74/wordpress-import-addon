@@ -280,11 +280,16 @@ importProject(){
         ;;
     esac
   done
+  
+  execAction "installWP_CLI" 'Install WP-CLI'
 
   source ${WP_ENV}
   SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
 
   WPT=$(getWPtoolkitVersion)
+  
+  ### Backuping original wp-config.php to temporary dir
+  [ ! -f ${BASE_DIR}/wp-config.php ] && cp ${WP_CONFIG} ${BASE_DIR}
 
   ### Restore original wp-config.php
   [ -f ${BASE_DIR}/wp-config.php ] && cat ${BASE_DIR}/wp-config.php > ${WP_CONFIG}
@@ -385,22 +390,22 @@ getRemoteProjects(){
   for i in "$@"; do
     case $i in
       --ssh-user=*)
-      SSH_USER=${i#*=}
+      INPUT_SSH_USER=${i#*=}
       shift
       shift
       ;;
       --ssh-password=*)
-      SSH_PASSWORD=${i#*=}
+      INPUT_SSH_PASSWORD=${i#*=}
       shift
       shift
       ;;
       --ssh-port=*)
-      SSH_PORT=${i#*=}
+      INPUT_SSH_PORT=${i#*=}
       shift
       shift
       ;;
       --ssh-host=*)
-      SSH_HOST=${i#*=}
+      INPUT_SSH_HOST=${i#*=}
       shift
       shift
       ;;
@@ -414,50 +419,51 @@ getRemoteProjects(){
     esac
   done
 
-  updateVariable SSH_USER ${SSH_USER}
-  updateVariable SSH_PASSWORD ${SSH_PASSWORD}
-  updateVariable SSH_PORT ${SSH_PORT}
-  updateVariable SSH_HOST ${SSH_HOST}
   source ${WP_ENV}
-  SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
-  checkSSHconnection
-  WPT=$(getWPtoolkitVersion)
+  
+  if [ "x${INPUT_SSH_USER}" != "x${SSH_USER}" ] || \
+     [ "x${INPUT_SSH_PASSWORD}" != "x${SSH_PASSWORD}" ] || \
+     [ "x${INPUT_SSH_PORT}" != "x${SSH_PORT}" ] || \
+     [ "x${INPUT_SSH_HOST}" != "x${SSH_HOST}" ]; then
 
-  if [[ "$WPT" == *wp-toolkit* ]]; then
-    getRemoteProjectListWPT
-    updateVariable WPT ${WPT}
-  else
-     echo ------------------------------
-#    REMOTE_WP_CLI=$(installRemoteWP_CLI)
-#    updateVariable REMOTE_WP_CLI ${REMOTE_WP_CLI}
-#    getRemoteProjectListWP_CLI
+      echo "export SSH_USER=${INPUT_SSH_USER}" > $WP_ENV;
+      echo "export SSH_PASSWORD=${INPUT_SSH_PASSWORD}" >> $WP_ENV;
+      echo "export SSH_PORT=${INPUT_SSH_PORT}" >> $WP_ENV;
+      echo "export SSH_HOST=${INPUT_SSH_HOST}" >> $WP_ENV;
+  
+      source ${WP_ENV}
+      SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
+      checkSSHconnection
+      WPT=$(getWPtoolkitVersion)
+
+      if [[ "$WPT" == *wp-toolkit* ]]; then
+        getRemoteProjectListWPT
+        updateVariable WPT ${WPT}
+      else
+        echo ------------------------------
+      fi
+      
+      project_list=$(cat ${BASE_DIR}/${WP_PROJECTS_LIST_JSON});
+      project_list_php=$(jq -n '[]');
+
+      for project in $(echo "${project_list}" | jq -r '.[] | @base64'); do
+        _jq() {
+        echo "${project}" | base64 --decode | jq -r "${1}"
+        }
+        id=$(_jq '.id')
+        php_version=$(getRemotePHPversionWPT $id)
+        project_list_php=$(echo $project_list_php | jq \
+          --argjson id $id \
+          --arg php_version "$php_version" \
+        '. += [{"id": $id, "php_version": $php_version}]')
+      done
+
+      echo $project_list_php > ${BASE_DIR}/${WP_PROJECTS_LIST_PHP_JSON}
   fi
-
-  project_list=$(cat ${BASE_DIR}/${WP_PROJECTS_LIST_JSON});
-  project_list_php=$(jq -n '[]');
-
-  for project in $(echo "${project_list}" | jq -r '.[] | @base64'); do
-    _jq() {
-     echo "${project}" | base64 --decode | jq -r "${1}"
-    }
-    id=$(_jq '.id')
-    php_version=$(getRemotePHPversionWPT $id)
-    project_list_php=$(echo $project_list_php | jq \
-        --argjson id $id \
-        --arg php_version "$php_version" \
-      '. += [{"id": $id, "php_version": $php_version}]')
-  done
-
-  echo $project_list_php > ${BASE_DIR}/${WP_PROJECTS_LIST_PHP_JSON}
-
+ 
   [[ "x${FORMAT}" == "xjson" ]] && { getProjectList --format=json; } || { getProjectList; }
 
 }
-
-### Backuping wp-config.php to /tmp/migrator/ dir
-[ ! -f ${BASE_DIR}/wp-config.php \] && cp ${WP_CONFIG} ${BASE_DIR}
-
-execAction "installWP_CLI" 'Install WP-CLI'
 
 case ${1} in
     getRemoteProjects)
