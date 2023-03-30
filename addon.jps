@@ -252,7 +252,7 @@ actions:
         for (var i = 0, n = projectList.length; i < n; i ++) {
           projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
           parts = projectPHPverion.split(".");     
-          enginePHP = "PHP" + parts.slice(0, 2).join(".");
+          enginePHP = "php" + parts.slice(0, 2).join(".");
           actions.push({
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
             settings: {
