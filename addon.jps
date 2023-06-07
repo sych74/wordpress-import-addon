@@ -217,6 +217,9 @@ actions:
           return result;
         }            
       
+        function generateEnvName() {
+          return "wp-" + Math.floor(Math.random() * 90000000) + 10000000;
+        }
         
         // load subscription
         resp = jelastic.administration.subscription.GetSubscriptions({
@@ -249,14 +252,17 @@ actions:
         if ( resp.result != 0 ) return resp;
 
         // Creating envs and migration projects
+        var env_name;
         for (var i = 0, n = projectList.length; i < n; i ++) {
           projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
           parts = projectPHPverion.split(".");     
           enginePHP = "php" + parts.slice(0, 2).join(".");
+          env_name = generateEnvName();
           actions.push({
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
             settings: {
               "master_env": envName,
+              "env_name": env_name,
               "php_engine": enginePHP,
               "project_id": projectList[i],
               "wpenv_file_content": wpenv_file_content.body,
