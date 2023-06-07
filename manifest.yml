@@ -13,8 +13,15 @@ globals:
   migration_dir: /home/jelastic/migrator
   wpenv_file: /home/jelastic/migrator/.wpenv
   projects_file: /home/jelastic/migrator/projects.json
+  tableName: WPMigrator
+
 onInstall:
   - installDependencies
+  - prepareDB
+
+onBeforeDelete:
+  - removeDB
+
 actions:
   installDependencies:
     - cmd[cp]: |-
@@ -25,3 +32,32 @@ actions:
     - cmd[${nodes.cp.master.id}]: |-
         [[ -d ${globals.migration_dir} ]] || mkdir ${globals.migration_dir};
         wget ${baseUrl}/scripts/migrator.sh -O ${globals.migration_dir}/migrator.sh;
+        
+  prepareDB:
+    script: |
+      let tableName = "${globals.tableName}";
+      let Response = com.hivext.api.Response;
+      let resp = api.data.base.GetType(tableName);
+      if (resp.result == com.hivext.api.Response.TYPE_NOT_DEFINED) {
+        resp = api.data.base.DefineType(appid, session, tableName, [{
+          envName: "string",
+          projectName: "string",
+          uid: "int",
+          status: "string"
+        }]);
+        if (resp.result != 0) return resp;
+        java.lang.Thread.sleep(1000);
+      }
+      
+      return { result: 0 }
+      
+  removeDB:
+    script: |
+      let tableName = "${globals.tableName}";
+      let resp = api.data.base.GetType(tableName);
+
+      return resp;
+      if (resp.result == 0) {
+        return api.data.base.UndefineType(tableName);
+      }
+      return { result: 0 };
