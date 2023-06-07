@@ -39,9 +39,6 @@ onInstall:
       envName: ${globals.env_name}
       session: ${settings.userSession}
       displayName: ${globals.projectName}-[FAILED]
-    - api: env.control.AttachEnvGroup
-      envName: ${globals.env_name}
-      envGroups: Migration-FAILED
 
 actions:
   createEnv:
