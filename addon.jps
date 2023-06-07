@@ -9,7 +9,7 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 2391;
   
-  const envName = "env-0862548";
+  const envName = "env-5859788";
   const ssh_host = "213.32.82.85";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -264,7 +264,7 @@ actions:
           parts = projectPHPverion.split(".");     
           enginePHP = "php" + parts.slice(0, 2).join(".");
           env_name = generateEnvName();      
-          createObject = base.CreateObject(tableName, {
+          createObject = api.data.base.CreateObject(tableName, {
             envName: env_name,
             projectName:  projectList[i],
             uid: targetUID,
