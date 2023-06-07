@@ -217,8 +217,10 @@ actions:
           return result;
         }            
       
+        // generate envName
         function generateEnvName() {
-          return "wp-" + Math.floor(Math.random() * 90000000) + 10000000;
+          var randomNumber = Math.floor(Math.random() * 90000000) + 10000000;
+          return "wp-" + randomNumber;
         }
         
         // load subscription
