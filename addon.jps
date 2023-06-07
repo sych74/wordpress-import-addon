@@ -9,7 +9,7 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 2391;
   
-  const envName = "env-0862548";
+  const envName = "env-5859788";
   const ssh_host = "213.32.82.85";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -184,10 +184,13 @@ responses:
 onInstall:
   - log: '${settings}'
   - deployProjects
+
 globals:
   migration_dir: /home/jelastic/migrator
   wpenv_file: /home/jelastic/migrator/.wpenv
   projects_file: /home/jelastic/migrator/projects.json
+  tableName: WPMigrator
+
 actions:         
   deployProjects:
     - script: |
@@ -217,6 +220,11 @@ actions:
           return result;
         }            
       
+        // generate envName
+        function generateEnvName() {
+          var randomNumber = Math.floor(Math.random() * 90000000) + 10000000;
+          return "wp-" + randomNumber;
+        }
         
         // load subscription
         resp = jelastic.administration.subscription.GetSubscriptions({
@@ -249,14 +257,25 @@ actions:
         if ( resp.result != 0 ) return resp;
 
         // Creating envs and migration projects
+        var tableName = "${globals.tableName}";
+        var env_name, createObject;
         for (var i = 0, n = projectList.length; i < n; i ++) {
           projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
           parts = projectPHPverion.split(".");     
           enginePHP = "php" + parts.slice(0, 2).join(".");
+          env_name = generateEnvName();      
+          createObject = api.data.base.CreateObject(tableName, {
+            envName: env_name,
+            projectName:  projectList[i],
+            uid: targetUID,
+            status: "failed"
+          });
+          if (createObject.result != 0) return createObject;
           actions.push({
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
             settings: {
               "master_env": envName,
+              "env_name": env_name,
               "php_engine": enginePHP,
               "project_id": projectList[i],
               "wpenv_file_content": wpenv_file_content.body,

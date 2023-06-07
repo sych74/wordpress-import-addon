@@ -8,7 +8,7 @@ globals:
   wp_admin_pass: ${fn.password(10)}
   db_user: user-${fn.random}
   db_pass: ${fn.password(10)}
-  env_name: wp-${fn.random}
+  env_name: ${settings.env_name}
   envGroups: "${settings.envGroups}"
   project_id: "${settings.project_id}"
   migration_dir: "/home/jelastic/migrator"
