@@ -184,10 +184,13 @@ responses:
 onInstall:
   - log: '${settings}'
   - deployProjects
+
 globals:
   migration_dir: /home/jelastic/migrator
   wpenv_file: /home/jelastic/migrator/.wpenv
   projects_file: /home/jelastic/migrator/projects.json
+  tableName: WPMigrator
+
 actions:         
   deployProjects:
     - script: |
@@ -254,12 +257,20 @@ actions:
         if ( resp.result != 0 ) return resp;
 
         // Creating envs and migration projects
-        var env_name;
+        var tableName = "${globals.tableName}";
+        var env_name, createObject;
         for (var i = 0, n = projectList.length; i < n; i ++) {
           projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
           parts = projectPHPverion.split(".");     
           enginePHP = "php" + parts.slice(0, 2).join(".");
-          env_name = generateEnvName();
+          env_name = generateEnvName();      
+          createObject = base.CreateObject(tableName, {
+            envName: env_name,
+            projectName:  projectList[i],
+            uid: targetUID,
+            status: "failed"
+          });
+          if (createObject.result != 0) return createObject;
           actions.push({
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
             settings: {
