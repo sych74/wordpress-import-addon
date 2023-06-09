@@ -15,7 +15,6 @@ onBeforeInit: |
   const ssh_user = "root";
   const ssh_pass = "abcABC123";
   
-  
   // NOT EDIT 
   // init vars
   var resp,
@@ -147,6 +146,12 @@ onBeforeInit: |
     "required": true,
     "hidden": true,
     "default": containerID
+  }, {
+    "type": "string",    
+    "name": "targetUID",
+    "required": true,
+    "hidden": true,
+    "default": targetUID
   })
   return {
     result: 0,
@@ -191,8 +196,14 @@ globals:
   projects_file: /home/jelastic/migrator/projects.json
   tableName: WPMigrator
 
-actions:         
+actions:
   deployProjects:
+    - script: |
+        // Signin As Client
+        var resp = jelastic.system.admin.SigninAsClient("cluster", session, "${settings.targetUID}");
+        if (resp.result != 0) return resp;
+        return { result: 0, onAfterReturn: { setGlobals: { userSession: resp.session } } };
+
     - script: |
         var targetUID = '${settings.targetUID}',
             subscriptionId = '${settings.subscription}',
@@ -238,15 +249,7 @@ actions:
         // validate count
         resp = validateInstallationCount(resp.array[0], projectList.length);
         if (resp.result != 0) return resp;
-        
-        // Signin As Client
-        resp = jelastic.system.admin.SigninAsClient("cluster", session, targetUID);
-        if (resp.result != 0) return resp;
            
-        const userSession = resp.session;
-   
-        // var envGroups = eval('(' + MANIFEST + ')').envGroups, actions = [], projectList = [];
-        
         var wpenv_file_content = jelastic.env.file.Read(envName, session, '${globals.wpenv_file}', null, null, containerID);
         if (wpenv_file_content.result != 0) return wpenv_file_content;
         var projects_file_content = jelastic.env.file.Read(envName, session, '${globals.projects_file}', null, null, containerID);        
@@ -281,9 +284,14 @@ actions:
               "wpenv_file_content": wpenv_file_content.body,
               "projects_file_content": projects_file_content.body,
               "subscriptionId": subscriptionId,
-              "userSession": userSession,
+              "userSession": "${globals.userSession}",
               "targetUID": targetUID
             }
           });
         }        
         return { result: 0, onAfterReturn: { 'marketplace.jps.install': actions } };
+    
+    - script: |
+        // Signout
+        return jelastic.users.authentication.Signout("cluster", "${globals.userSession");
+        
