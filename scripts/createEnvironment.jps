@@ -129,6 +129,15 @@ actions:
         }
         if (respOut.result != 0)
           migrateStatus = "FAIL"
+
+        cmd1 = "echo " + migrateStatus + "> /var/lib/jelastic/keys/migrator/status";       
+        resp = api.environment.control.ExecCmdById({
+          envName: '${globals.env_name}',
+          session: '${settings.userSession}',
+          nodeId: '${globals.master_id}',
+          userName: "root",
+          commandList: toJSON([{"command": cmd1}])
+        });
         return { result : 0, onAfterReturn: { setGlobals: { migrateStatus: migrateStatus } } };
         
   responseOut:
