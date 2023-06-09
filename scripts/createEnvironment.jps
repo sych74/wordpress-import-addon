@@ -22,7 +22,17 @@ onInstall:
   - installDependencies
   - importProject
   - getProjectName
-  - if ('${globals.migrateStatus}' == 'OK'): 
+  - api: env.control.ExecCmdById
+    envName: ${globals.env_name}
+    nodeId: ${globals.master_id}
+    session: ${settings.userSession}
+    userName: root
+    commandList:
+      - command: |-
+          [ ! -d /var/lib/jelastic/keys/migrator ] && mkdir -p /var/lib/jelastic/keys/migrator;
+          echo "${globals.migrateStatus}" > /var/lib/jelastic/keys/migrator/status;
+
+  - if ('${globals.migrateStatus}' == 'SUCCESS'): 
     - responseOut:
         status: 'SUCCESS'
         message: ''
@@ -112,7 +122,7 @@ actions:
 
   importProject:
     - script: | 
-        var migrateStatus = "OK";
+        var migrateStatus = "SUCCESS";
         var cmd1 = "bash ${globals.migration_dir}/migrator.sh importProject --instance-id=${globals.project_id}";       
         var resp = api.environment.control.ExecCmdById({
           envName: '${globals.env_name}',
@@ -130,15 +140,6 @@ actions:
         if (respOut.result != 0)
           migrateStatus = "FAIL"
 
-        cmd1 = "echo " + migrateStatus + " > /var/lib/jelastic/keys/migrator/status";       
-        resp = api.environment.control.ExecCmdById({
-          envName: '${globals.env_name}',
-          session: '${settings.userSession}',
-          nodeId: '${globals.master_id}',
-          userName: "root",
-          commandList: toJSON([{"command": cmd1}])
-        });
-        if (resp.result != 0) return resp;
         return { result : 0, onAfterReturn: { setGlobals: { migrateStatus: migrateStatus } } };
         
   responseOut:
