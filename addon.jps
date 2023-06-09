@@ -10,10 +10,10 @@ onBeforeInit: |
   const targetUID = 2391;
   
   const envName = "env-5859788";
-  const ssh_host = "213.32.82.85";
+  const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
-  const ssh_pass = "V97hpaFfrbFR7EhE";
+  const ssh_pass = "abcABC123";
   
   
   // NOT EDIT 
