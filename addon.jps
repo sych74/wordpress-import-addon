@@ -303,41 +303,67 @@ actions:
         }] };
 
   updateProjectStatuses:
-    script: |
-      let base = api.data.base;
-      let targetUID = '${settings.targetUID}';
-      let tableName = "${globals.tableName}";
-      const CP = "cp";
-      const count = 100;
-      let from = 0;
-      let resp, imports = [];
-      let criteria = {
-        envName: "${globals.envNames}"
-      };
-      
-      while (true) {
-        resp = base.GetObjectsByCriteria(appid, session, tableName, criteria, from, count);
-        from += count;
-        if (resp.result != 0) return resp;
-        if (resp.objects.length == 0) break;
-        imports = imports.concat(resp.objects);
-      }
-      
-      for (let i = 0, n = imports.length; i < n; i++) {
-        if (imports[i].envName) {
-          resp = api.env.control.ExecCmdByGroup(imports[i].envName, "${globals.userSession}", CP, toJSON([{command: "cat /var/lib/jelastic/keys/migrator/status"}]), true, false);
+    - script: |
+        let base = api.data.base;
+        let targetUID = '${settings.targetUID}';
+        let tableName = "${globals.tableName}";
+        const CP = "cp";
+        const count = 100;
+        let from = 0;
+        let resp, imports = [], out;
+        let successEnvs = [], failedEnvs = [];
+        let criteria = {
+          envName: "${globals.envNames}"
+        };
+
+        function formatSuccessText(success, failed) {
+          let text = "";
+          if (success.length) {
+            text = "WordPress migration has been finished successfully for the following environment names: \n * " + successEnvs.join(" ").replace(/\s+/g, "\n * ")
+          }
+
+          if (failed.length) {
+            text += "WordPress migration has been failed for the following environment names: \n * " + failed.join(" ").replace(/\s+/g, "\n * ")
+          }
+
+          return text;
+        }
+
+        while (true) {
+          resp = base.GetObjectsByCriteria(appid, session, tableName, criteria, from, count);
+          from += count;
           if (resp.result != 0) return resp;
-          api.marketplace.console.WriteLog("resp vrom created envs->" + resp);
-          if (resp.responses && resp.responses[0] && resp.responses[0].out) {
-            resp = base.SetProperty(appid, session, tableName, imports[i].id, "status", resp.responses[0].out)
+          if (resp.objects.length == 0) break;
+          imports = imports.concat(resp.objects);
+        }
+
+        for (let i = 0, n = imports.length; i < n; i++) {
+          if (imports[i].envName) {
+            resp = api.env.control.ExecCmdByGroup(imports[i].envName, "${globals.userSession}", CP, toJSON([{command: "cat /var/lib/jelastic/keys/migrator/status"}]), true, false);
             if (resp.result != 0) return resp;
+            api.marketplace.console.WriteLog("resp from created envs->" + resp);
+            if (resp.responses && resp.responses[0] && resp.responses[0].out) {
+              out = resp.responses[0].out;
+              resp = base.SetProperty(appid, session, tableName, imports[i].id, "status", out)
+              if (resp.result != 0) return resp;
+              if (out == "success") {
+                successEnvs.push(imports[i].envName);
+              } else {
+                failedEnvs.push(imports[i].envName);
+              }
+            }
           }
         }
-      }
 
-      return { result: 0 }
+        let text = formatSuccessText(successEnvs, failedEnvs);
+
+        return { result: 0, text: text }
+    - setGlobals:
+        successText: ${response.text}
       
   signout:
     script: |
       // Signout
       return jelastic.users.authentication.Signout("cluster", "${globals.userSession");
+      
+success: ${globals.successText}
