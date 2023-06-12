@@ -33,18 +33,12 @@ onInstall:
           echo "${globals.migrateStatus}" > /var/lib/jelastic/keys/migrator/status;
 
   - if ('${globals.migrateStatus}' == 'SUCCESS'): 
-    - responseOut:
-        status: 'SUCCESS'
-        message: ''
     - api: env.control.SetEnvDisplayName
       envName: ${globals.env_name}
       session: ${settings.userSession}
       displayName: ${globals.projectName}
 
   - if ('${globals.migrateStatus}' == 'FAIL'):
-    - responseOut:
-        status: 'FAILED'
-        message: ''
     - api: env.control.SetEnvDisplayName
       envName: ${globals.env_name}
       session: ${settings.userSession}
