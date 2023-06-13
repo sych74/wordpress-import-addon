@@ -17,8 +17,7 @@ onBeforeInit: |
   
   // NOT EDIT 
   // init vars
-  var resp,
-      containerID;
+  var resp, containerID;
   
   // check migrator env
   resp = jelastic.env.control.GetEnvInfo(envName, session);
@@ -30,6 +29,7 @@ onBeforeInit: |
   }    
   
   //TODO: handle errors
+  
   // load projects
   var command = "bash /home/jelastic/migrator/migrator.sh getRemoteProjects --ssh-user=" + ssh_user + " --ssh-password=" + ssh_pass + " --ssh-host=" + ssh_host + " --ssh-port=" + ssh_port + " --format=json"; 
   resp = api.env.control.ExecCmdById(envName, session, containerID, toJSON([{ "command": command }]), true);
@@ -38,7 +38,10 @@ onBeforeInit: |
   resp = jelastic.env.control.ExecCmdById(envName, session, containerID, toJSON([{ command: 'cat /home/jelastic/migrator/projects.json' }]), true);
   if ( resp.result != 0 ) return resp;
   
-  var projectList = JSON.parse(resp.responses[0].out);  
+  var projectList = JSON.parse(resp.responses[0].out);
+  
+  var ownerList = prepareOwners(projectList);
+  
   var projectListPrepared = prepareProjects(projectList);
   
   // load subscriptions
@@ -54,6 +57,25 @@ onBeforeInit: |
   var subscriptions = prepareSubscriptions(resp.array);
   
   // utils
+  
+  function prepareOwners(values) {
+    var aResultValues = [];
+    values = values || [];
+    var uniqueOwnerIds = new Set();
+
+    values.forEach(obj => { uniqueOwnerIds.add(obj.ownerId); });
+
+    const uniqueOwnerIdsArray = Array.from(uniqueOwnerIds);
+
+    for (var i = 0, n = uniqueOwnerIdsArray.length; i < n; i++) {
+      aResultValues.push({
+        caption: uniqueOwnerIdsArray[i],
+        value:  uniqueOwnerIdsArray[i]
+      });
+    }
+    return aResultValues;
+  }
+  
   function prepareProjects(values) {
     var aResultValues = [];
     values = values || [];
@@ -131,9 +153,8 @@ onBeforeInit: |
     "tooltip": "Select the project which you want to import",          
     "name": "users",
     "required": true,
-    "multiSelect": true,
     "hideLabel": true,
-    "values": projectListPrepared
+    "values": ownerList
   },{
     "caption": "Projects",
     "type": "displayfield",
