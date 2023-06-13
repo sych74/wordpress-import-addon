@@ -68,9 +68,7 @@ onBeforeInit: |
   }
   
   function prepareSubscriptions(values) {
-    var aResultValues = [],
-        item,
-        servicePlanItem;
+    var aResultValues = [], item, servicePlanItem;
         
     values = values || [];
    
@@ -120,6 +118,22 @@ onBeforeInit: |
     "required": true,
     "hideLabel": true,
     "values": subscriptions
+  }, {
+    "type": "separator"
+  }, {
+    "caption": "Source User ID",
+    "type": "displayfield",
+    "tooltip": "Select the user from which you want to import",          
+    "required": false
+  },{
+    "caption": "Users",
+    "type": "list",
+    "tooltip": "Select the project which you want to import",          
+    "name": "users",
+    "required": true,
+    "multiSelect": true,
+    "hideLabel": true,
+    "values": projectListPrepared
   },{
     "caption": "Projects",
     "type": "displayfield",
@@ -133,7 +147,9 @@ onBeforeInit: |
     "required": true,
     "multiSelect": true,
     "hideLabel": true,
-    "values": projectListPrepared
+    "dependsOn": {
+      "users" : projectListPrepared
+    }
   }, {
     "type": "string",    
     "name": "envName",
