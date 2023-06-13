@@ -42,7 +42,7 @@ onBeforeInit: |
   
   var ownerList = prepareOwners(projectList);
   
-  var projectListPrepared = prepareProjects(projectList);
+  var projectListPrepared = prepareProjects(ownerList,projectList);
   
   // load subscriptions
   resp = jelastic.administration.subscription.GetSubscriptions({
@@ -64,7 +64,6 @@ onBeforeInit: |
     var uniqueOwnerIds = new Set();
 
     values.forEach(obj => { uniqueOwnerIds.add(obj.ownerId); });
-
     const uniqueOwnerIdsArray = Array.from(uniqueOwnerIds);
 
     for (var i = 0, n = uniqueOwnerIdsArray.length; i < n; i++) {
@@ -75,18 +74,22 @@ onBeforeInit: |
     }
     return aResultValues;
   }
-  
-  function prepareProjects(values) {
-    var aResultValues = [];
-    values = values || [];
-    
-    for (var i = 0, n = values.length; i < n; i++) {
-      aResultValues.push({
-        caption: values[i].ownerId + "  | " + values[i].siteUrl + " | " + values[i].fullPath,
-        value: values[i].id
-      });
+
+  function prepareProjects(owners,projects) {
+    var oResultProjects = {}, aValues;
+    for (var k = 0, l = owners.length; k < l; k++) {
+      aValues = [];
+      for (var i = 0, n = projects.length; i < n; i++) {
+        if (owners[k].value === projects[i].ownerId) {
+          aValues.push({
+            caption: projects[i].siteUrl + " | " + projects[i].fullPath,
+            value: projects[i].id
+          });
+        }
+      }
+      oResultProjects[owners[k].value] = aValues;
     }
-    return aResultValues;
+    return oResultProjects;
   }
   
   function prepareSubscriptions(values) {
