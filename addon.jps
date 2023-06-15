@@ -276,7 +276,7 @@ actions:
             envName: envName,
             projectName:  projectList[i],
             uid: targetUID,
-            status: "failed"
+            status: "in progress"
           });
           if (createObject.result != 0) return createObject;
           actions.push({
