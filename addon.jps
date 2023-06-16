@@ -96,13 +96,13 @@ onBeforeInit: |
     "required": false
   }, {
     "caption": "Target User ID",
-    "type": "string",    
+    "type": "string",
     "name": "targetUID",
     "required": true,
     "hideLabel": true,
     "default": targetUID
   }, {
-    "type": "string",    
+    "type": "string",
     "required": false,
     "hideLabel": true,
     "disabled": true,
@@ -110,12 +110,12 @@ onBeforeInit: |
   }, {
     "caption": "Subscription",
     "type": "displayfield",
-    "tooltip": "Select the subscription to which you want to import",          
+    "tooltip": "Select the subscription to which you want to import",
     "required": false
   }, {
     "caption": "Subscription",
     "type": "list",
-    "tooltip": "Select the subscription to which you want to import",          
+    "tooltip": "Select the subscription to which you want to import",
     "name": "subscription",
     "required": true,
     "hideLabel": true,
@@ -134,7 +134,7 @@ onBeforeInit: |
     "multiSelect": true,
     "hideLabel": true,
     "values": projectListPrepared
-  },{
+  }, {
     "type": "string",    
     "name": "envName",
     "required": true,
@@ -274,9 +274,10 @@ actions:
           envNames.push(envName);
           createObject = api.data.base.CreateObject(tableName, {
             envName: envName,
-            projectName:  projectList[i],
             uid: targetUID,
-            status: "in progress"
+            status: "in progress",
+            projectName:  projectList[i],
+            subscriptionId: subscriptionId
           });
           if (createObject.result != 0) return createObject;
           actions.push({
@@ -307,10 +308,11 @@ actions:
         let base = api.data.base;
         let targetUID = '${settings.targetUID}';
         let tableName = "${globals.tableName}";
+        let userSession = "${globals.userSession}";
         const CP = "cp";
         const count = 100;
         let from = 0;
-        let resp, imports = [], out;
+        let resp, imports = [], out, item, resource, subResource;
         let successEnvs = [], failedEnvs = [];
         let criteria = {
           envName: "${globals.envNames}"
@@ -339,17 +341,41 @@ actions:
 
         for (let i = 0, n = imports.length; i < n; i++) {
           if (imports[i].envName) {
-            resp = api.env.control.ExecCmdByGroup(imports[i].envName, "${globals.userSession}", CP, toJSON([{command: "cat /var/lib/jelastic/keys/migrator/status"}]), true, false);
+            resp = api.env.control.ExecCmdByGroup(imports[i].envName, userSession, CP, toJSON([{command: "cat /var/lib/jelastic/keys/migrator/status"}]), true, false);
             if (resp.result != 0) return resp;
-            api.marketplace.console.WriteLog("resp from created envs->" + resp);
             if (resp.responses && resp.responses[0] && resp.responses[0].out) {
               out = resp.responses[0].out;
               resp = base.SetProperty(appid, session, tableName, imports[i].id, "status", out)
               if (resp.result != 0) return resp;
               if (out == "success") {
                 successEnvs.push(imports[i].envName);
-              } else {
+              } else if (out == "FAIL") {
                 failedEnvs.push(imports[i].envName);
+                resp = api.billing.subscription.GetSubscriptions({
+                  appid: "cluster", 
+                  session: userSession, 
+                  id: imports[i].subscriptionId,
+                  expandFields: "*"
+                });
+                
+                if (resp.result != 0) return resp;
+                if (resp.array && resp.array[0] && resp.array[0].items && resp.array[0].items[0]) {
+                  item = resp.array[0].items[0];
+                  if (item.id == imports[i].subscriptionId && item.resources.length) {
+                    for (let k = 0, l = item.resources.length; k < l; k++) {
+                      subResource = JSON.parse(item.resources[k].resources);
+                      
+                      if (subResource.length) {
+                        for (let m = 0, n = subResource.length; m < n; m++) {
+                          if (subResource[m] && subResource[m].name == imports[i].envName) {
+                            resp = api.billing.subscription.UninstallProduct(appid, userSession, imports[i].subscriptionId, 76, item.resources[k].id, item.resources[k].uniqueName.replace(/-.*/, ""));
+                            if (resp.result != 0) return resp;
+                          }
+                        }                        
+                      }
+                    }
+                  }
+                }
               }
             }
           }
