@@ -9,7 +9,7 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 2391;
   
-  const envName = "env-5859788";
+  const envName = "env-6381667";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -107,7 +107,20 @@ onBeforeInit: |
     "hideLabel": true,
     "disabled": true,
     "default": jelastic.system.admin.GetUserInfo(appid, session, targetUID).email
-  },{
+  }, {
+    "caption": "Subscription",
+    "type": "displayfield",
+    "tooltip": "Select the subscription to which you want to import",          
+    "required": false
+  }, {
+    "caption": "Subscription",
+    "type": "list",
+    "tooltip": "Select the subscription to which you want to import",          
+    "name": "subscription",
+    "required": true,
+    "hideLabel": true,
+    "values": subscriptions
+  }, {
     "caption": "Projects",
     "type": "displayfield",
     "tooltip": "Select the project which you want to import",          
@@ -122,19 +135,6 @@ onBeforeInit: |
     "hideLabel": true,
     "values": projectListPrepared
   },{
-    "caption": "Subscription",
-    "type": "displayfield",
-    "tooltip": "Select the subscription to which you want to import",          
-    "required": false
-  },{
-    "caption": "Subscription",
-    "type": "list",
-    "tooltip": "Select the subscription to which you want to import",          
-    "name": "subscription",
-    "required": true,
-    "hideLabel": true,
-    "values": subscriptions
-  }, {
     "type": "string",    
     "name": "envName",
     "required": true,
