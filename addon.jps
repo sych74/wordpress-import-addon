@@ -7,7 +7,7 @@ baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/m
 
 onBeforeInit: | 
   // CHANGE VARIABLES
-  const targetUID = 2391;
+  const targetUID = 6967;
   
   const envName = "env-8502850";
   const ssh_host = "198.244.136.252";
@@ -60,7 +60,7 @@ onBeforeInit: |
     
     for (var i = 0, n = values.length; i < n; i++) {
       aResultValues.push({
-        caption: values[i].ownerId + "  | " + values[i].siteUrl + " | " + values[i].fullPath,
+        caption: values[i].ownerId + "  | " + values[i].siteUrl,
         value: values[i].id
       });
     }
@@ -86,6 +86,8 @@ onBeforeInit: |
     
     return aResultValues;
   }
+    
+  
   // format settings
   var fields = [];
   
