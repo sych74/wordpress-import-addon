@@ -17,8 +17,8 @@ onBeforeInit: |
   
   // NOT EDIT 
   // init vars
-  var resp,
-      containerID;
+  var resp, containerID;
+  var tableName = "WPMigrator";
   
   // check migrator env
   resp = jelastic.env.control.GetEnvInfo(envName, session);
@@ -60,7 +60,7 @@ onBeforeInit: |
     
     for (var i = 0, n = values.length; i < n; i++) {
       aResultValues.push({
-        caption: values[i].ownerId + "  | " + values[i].siteUrl,
+        caption: values[i].ownerId + "  | " + values[i].siteUrl + " - " + getProjectStatus(values[i].id),
         value: values[i].id
       });
     }
@@ -86,7 +86,12 @@ onBeforeInit: |
     
     return aResultValues;
   }
-    
+  
+  function getProjectStatus(projectName) {
+    var resp = api.data.base.GetObjectsByCriteria(tableName, {projectName: projectName}, 0, 1);
+    if (resp.result != 0) return resp;
+    return resp.objects[0].status;
+  }
   
   // format settings
   var fields = [];
