@@ -43,7 +43,8 @@ actions:
           envName: "string",
           projectName: "string",
           uid: "int",
-          status: "string"
+          status: "string",
+          subscriptionId: "int"
         }]);
         if (resp.result != 0) return resp;
         java.lang.Thread.sleep(1000);
