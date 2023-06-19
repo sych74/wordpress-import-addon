@@ -9,7 +9,7 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 2391;
   
-  const envName = "env-6381667";
+  const envName = "env-8502850";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -272,14 +272,15 @@ actions:
           enginePHP = "php" + parts.slice(0, 2).join(".");
           envName = generateEnvName();  
           envNames.push(envName);
+          
           createObject = api.data.base.CreateObject(tableName, {
             envName: envName,
             uid: targetUID,
             status: "in progress",
-            projectName:  projectList[i],
-            subscriptionId: subscriptionId
-          });
+            projectName:  projectList[i]
+          });   
           if (createObject.result != 0) return createObject;
+          
           actions.push({
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
             settings: {
