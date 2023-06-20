@@ -90,7 +90,10 @@ onBeforeInit: |
   function getProjectStatus(projectName) {
     var resp = api.data.base.GetObjectsByCriteria(tableName, {projectName: projectName}, 0, 1);
     if (resp.result != 0) return resp;
-    return resp.objects[0].status;
+    var data = resp.objects[0] || [];
+    if (data.hasOwnProperty('status'))
+        status = data.status;
+    return status;
   }
   
   // format settings
