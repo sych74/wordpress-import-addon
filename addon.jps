@@ -7,9 +7,9 @@ baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/m
 
 onBeforeInit: | 
   // CHANGE VARIABLES
-  const targetUID = 6967;
+  const targetUID = 35;
   
-  const envName = "env-8502850";
+  const envName = "env-8611222";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -60,7 +60,7 @@ onBeforeInit: |
     
     for (var i = 0, n = values.length; i < n; i++) {
       aResultValues.push({
-        caption: values[i].ownerId + "  | " + values[i].siteUrl + " - " + getProjectStatus(values[i].id),
+        caption: values[i].ownerId + "  | " + values[i].siteUrl + getProjectStatus(values[i].id),
         value: values[i].id
       });
     }
@@ -88,11 +88,12 @@ onBeforeInit: |
   }
   
   function getProjectStatus(projectName) {
+    var status = '';
     var resp = api.data.base.GetObjectsByCriteria(tableName, {projectName: projectName}, 0, 1);
     if (resp.result != 0) return resp;
     var data = resp.objects[0] || [];
     if (data.hasOwnProperty('status'))
-        status = data.status;
+        status = " - " + data.status;
     return status;
   }
   
