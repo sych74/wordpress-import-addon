@@ -9,11 +9,11 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 35;
   
-  const envName = "env-8611222";
+  const envName = "env-6531495";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
-  const ssh_pass = "abcABC123";
+  const ssh_pass = "jelastic#abcABC123";
   
   // NOT EDIT 
   // init vars
