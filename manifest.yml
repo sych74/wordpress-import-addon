@@ -44,7 +44,6 @@ actions:
           projectId: "int",
           projectName: "string",
           uid: "int",
-          subscriptionId: "int",
           status: "string",
           error: "string"
         }]);
