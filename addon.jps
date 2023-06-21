@@ -60,7 +60,7 @@ onBeforeInit: |
     
     for (var i = 0, n = values.length; i < n; i++) {
       aResultValues.push({
-        caption: values[i].ownerId + "  | " + values[i].siteUrl + getProjectStatus(values[i].id),
+        caption: values[i].ownerId + "  | " + values[i].siteUrl + getProjectStatusById(values[i].id),
         value: values[i].id
       });
     }
@@ -87,9 +87,9 @@ onBeforeInit: |
     return aResultValues;
   }
   
-  function getProjectStatus(projectName) {
+  function getProjectStatusById(projectId) {
     var status = '';
-    var resp = api.data.base.GetObjectsByCriteria(tableName, {projectName: projectName}, 0, 1);
+    var resp = api.data.base.GetObjectsByCriteria(tableName, {projectId: projectId}, 0, 1);
     if (resp.result != 0) return resp;
     var data = resp.objects[0] || [];
     if (data.hasOwnProperty('status'))
@@ -288,7 +288,7 @@ actions:
             envName: envName,
             uid: targetUID,
             status: "IN PROGRESS",
-            projectName:  projectList[i]
+            projectId:  projectList[i]
           });   
           if (createObject.result != 0) return createObject;
           
