@@ -38,8 +38,10 @@ onBeforeInit: |
   resp = jelastic.env.control.ExecCmdById(envName, session, containerID, toJSON([{ command: 'cat /home/jelastic/migrator/projects.json' }]), true);
   if ( resp.result != 0 ) return resp;
   
-  var projectList = JSON.parse(resp.responses[0].out);  
+  var projectList = JSON.parse(resp.responses[0].out);
+  var ownerList = prepareOwners(projectList);
   var projectListPrepared = prepareProjects(projectList);
+  var projectListPreparedById = prepareProjectsById(ownerList,projectList);
   
   // load subscriptions
   resp = jelastic.administration.subscription.GetSubscriptions({
@@ -97,6 +99,40 @@ onBeforeInit: |
     return status;
   }
   
+  function prepareOwners(values) {
+    var aResultValues = [];
+    values = values || [];
+    var uniqueOwnerIds = new Set();
+
+    values.forEach(obj => { uniqueOwnerIds.add(obj.ownerId); });
+    const uniqueOwnerIdsArray = Array.from(uniqueOwnerIds);
+
+    for (var i = 0, n = uniqueOwnerIdsArray.length; i < n; i++) {
+      aResultValues.push({
+        caption: uniqueOwnerIdsArray[i],
+        value:  uniqueOwnerIdsArray[i]
+      });
+    }
+    return aResultValues;
+  }
+
+  function prepareProjectsById(owners,projects) {
+    var oResultProjects = {}, aValues;
+    for (var k = 0, l = owners.length; k < l; k++) {
+      aValues = [];
+      for (var i = 0, n = projects.length; i < n; i++) {
+        if (owners[k].value === projects[i].ownerId) {
+          aValues.push({
+            caption: projects[i].siteUrl + " | " + projects[i].fullPath,
+            value: projects[i].id
+          });
+        }
+      }
+      oResultProjects[owners[k].value] = aValues;
+    }
+    return oResultProjects;
+  }
+  
   // format settings
   var fields = [];
   
@@ -131,21 +167,75 @@ onBeforeInit: |
     "required": true,
     "hideLabel": true,
     "values": subscriptions
-  }, {
-    "caption": "Projects",
-    "type": "displayfield",
-    "tooltip": "Select the project which you want to import",          
-    "required": false
-  },{
-    "caption": "Projects",
+  }, 
+  
+  {
+    "type": "separator"
+  },  
+  
+  {
+    "caption": "Display projects",
     "type": "list",
-    "tooltip": "Select the project which you want to import",          
-    "name": "projects",
+    "name": "Display project",
     "required": true,
-    "multiSelect": true,
-    "hideLabel": true,
-    "values": projectListPrepared
-  }, {
+    "default": "all",
+    "values": {
+      "all": "All projects",
+      "byId": "Projects by Source User ID"
+    },
+    "showIf": {
+      "all": [
+      
+      {
+        "caption": "Projects",
+        "type": "displayfield",
+        "tooltip": "Select the project which you want to import",          
+        "required": false
+      },{
+        "caption": "Projects",
+        "type": "list",
+        "tooltip": "Select the project which you want to import",          
+        "name": "projects",
+        "required": true,
+        "multiSelect": true,
+        "hideLabel": true,
+        "values": projectListPrepared
+      }
+      ],
+       "byId": [
+       
+        {
+          "caption": "Source User ID",
+          "type": "list",
+          "tooltip": "Select the project which you want to import",          
+          "name": "users",
+          "required": true,
+          "values": ownerList
+        },{
+          "caption": "Projects",
+          "type": "displayfield",
+          "tooltip": "Select the project which you want to import",          
+          "required": false
+        },{
+          "caption": "Projects",
+          "type": "list",
+          "tooltip": "Select the project which you want to import",          
+          "name": "projects",
+          "required": true,
+          "multiSelect": true,
+          "hideLabel": true,
+          "dependsOn": {
+            "users" : projectListPreparedById
+          }
+        }       
+       
+       ]    
+       
+    }
+  }, 
+  
+  
+  {
     "type": "string",    
     "name": "envName",
     "required": true,
