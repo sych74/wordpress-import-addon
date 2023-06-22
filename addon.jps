@@ -7,9 +7,9 @@ baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/m
 
 onBeforeInit: | 
   // CHANGE VARIABLES
-  const targetUID = 35;
+  const targetUID = 6967;
   
-  const envName = "env-6531495";
+  const envName = "env-9594898";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -359,9 +359,9 @@ actions:
               out = resp.responses[0].out;
               resp = base.SetProperty(appid, session, tableName, imports[i].id, "status", out)
               if (resp.result != 0) return resp;
-              if (out == "success") {
+              if (out == "SUCCESSFULLY MIGRATED") {
                 successEnvs.push(imports[i].envName);
-              } else if (out == "FAIL") {
+              } else if (out == "MIGRATION FAILED") {
                 failedEnvs.push(imports[i].envName);
                 resp = api.billing.subscription.GetSubscriptions({
                   appid: "cluster", 
