@@ -123,7 +123,7 @@ onBeforeInit: |
       for (var i = 0, n = projects.length; i < n; i++) {
         if (owners[k].value === projects[i].ownerId) {
           aValues.push({
-            caption: projects[i].siteUrl + " | " + projects[i].fullPath,
+            caption: projects[i].siteUrl + getProjectStatusById(projects[i].id),
             value: projects[i].id
           });
         }
@@ -167,13 +167,9 @@ onBeforeInit: |
     "required": true,
     "hideLabel": true,
     "values": subscriptions
-  }, 
-  
-  {
+  }, {
     "type": "separator"
-  },  
-  
-  {
+  }, {
     "caption": "Display projects",
     "type": "list",
     "name": "Display project",
@@ -184,8 +180,7 @@ onBeforeInit: |
       "byId": "Projects by Source User ID"
     },
     "showIf": {
-      "all": [
-      
+      "all": [   
       {
         "caption": "Projects",
         "type": "displayfield",
@@ -203,7 +198,6 @@ onBeforeInit: |
       }
       ],
        "byId": [
-       
         {
           "caption": "Source User ID",
           "type": "list",
@@ -227,15 +221,10 @@ onBeforeInit: |
           "dependsOn": {
             "users" : projectListPreparedById
           }
-        }       
-       
-       ]    
-       
+        }
+      ]
     }
-  }, 
-  
-  
-  {
+  }, {
     "type": "string",    
     "name": "envName",
     "required": true,
