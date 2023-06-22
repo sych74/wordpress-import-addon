@@ -1,6 +1,6 @@
 type: install
 name: Standalone Pro
-baseUrl: https://raw.githubusercontent.com/sych74/wordpress-import-addon/WP-436
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/master
   
 globals:
   master_env: ${settings.master_env}
