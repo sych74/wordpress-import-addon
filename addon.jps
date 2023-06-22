@@ -7,18 +7,18 @@ baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/m
 
 onBeforeInit: | 
   // CHANGE VARIABLES
-  const targetUID = 2391;
+  const targetUID = 35;
   
-  const envName = "env-8502850";
+  const envName = "env-6531495";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
-  const ssh_pass = "abcABC123";
+  const ssh_pass = "jelastic#abcABC123";
   
   // NOT EDIT 
   // init vars
-  var resp,
-      containerID;
+  var resp, containerID;
+  var tableName = "WPMigrator";
   
   // check migrator env
   resp = jelastic.env.control.GetEnvInfo(envName, session);
@@ -60,7 +60,7 @@ onBeforeInit: |
     
     for (var i = 0, n = values.length; i < n; i++) {
       aResultValues.push({
-        caption: values[i].ownerId + "  | " + values[i].siteUrl + " | " + values[i].fullPath,
+        caption: values[i].ownerId + "  | " + values[i].siteUrl + getProjectStatusById(values[i].id),
         value: values[i].id
       });
     }
@@ -86,6 +86,17 @@ onBeforeInit: |
     
     return aResultValues;
   }
+  
+  function getProjectStatusById(projectId) {
+    var status = '';
+    var resp = api.data.base.GetObjectsByCriteria(tableName, {projectId: projectId}, 0, 1);
+    if (resp.result != 0) return resp;
+    var data = resp.objects[0] || [];
+    if (data.hasOwnProperty('status'))
+        status = " - " + data.status;
+    return status;
+  }
+  
   // format settings
   var fields = [];
   
@@ -276,8 +287,8 @@ actions:
           createObject = api.data.base.CreateObject(tableName, {
             envName: envName,
             uid: targetUID,
-            status: "in progress",
-            projectName:  projectList[i]
+            status: "IN PROGRESS",
+            projectId:  projectList[i]
           });   
           if (createObject.result != 0) return createObject;
           

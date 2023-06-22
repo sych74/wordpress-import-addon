@@ -41,10 +41,11 @@ actions:
       if (resp.result == com.hivext.api.Response.TYPE_NOT_DEFINED) {
         resp = api.data.base.DefineType(appid, session, tableName, [{
           envName: "string",
+          projectId: "int",
           projectName: "string",
           uid: "int",
           status: "string",
-          subscriptionId: "int"
+          error: "string"
         }]);
         if (resp.result != 0) return resp;
         java.lang.Thread.sleep(1000);

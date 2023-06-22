@@ -32,13 +32,13 @@ onInstall:
           [ ! -d /var/lib/jelastic/keys/migrator ] && mkdir -p /var/lib/jelastic/keys/migrator;
           echo "${globals.migrateStatus}" > /var/lib/jelastic/keys/migrator/status;
 
-  - if ('${globals.migrateStatus}' == 'SUCCESS'): 
+  - if ('${globals.migrateStatus}' == 'SUCCESSFULLY MIGRATED'): 
     - api: env.control.SetEnvDisplayName
       envName: ${globals.env_name}
       session: ${settings.userSession}
       displayName: ${globals.projectName}
 
-  - if ('${globals.migrateStatus}' == 'FAIL'):
+  - if ('${globals.migrateStatus}' == 'MIGRATION FAILED'):
     - api: env.control.SetEnvDisplayName
       envName: ${globals.env_name}
       session: ${settings.userSession}
@@ -55,7 +55,8 @@ actions:
             "envName": "${globals.env_name}",
             "cdn-addon": "false",
             "php_engine": '${settings.php_engine}',
-            "le-addon": "false"
+            "le-addon": "false",
+            "success_email": "false"
           }      
         });
       if (resp.result != 0) {
@@ -117,7 +118,7 @@ actions:
 
   importProject:
     - script: | 
-        var migrateStatus = "SUCCESS";
+        var migrateStatus = "SUCCESSFULLY MIGRATED";
         var cmd1 = "bash ${globals.migration_dir}/migrator.sh importProject --instance-id=${globals.project_id}";       
         var resp = api.environment.control.ExecCmdById({
           envName: '${globals.env_name}',
@@ -126,14 +127,14 @@ actions:
           commandList: toJSON([{"command": cmd1}])
         });
         if (resp.result != 0)
-          migrateStatus = "FAIL"
+          migrateStatus = "MIGRATION FAILED"
         try {
           respOut = JSON.parse(resp.responses[0].out) || [];
         } catch (ex) {
-          migrateStatus = "FAIL"
+          migrateStatus = "MIGRATION FAILED"
         }
         if (respOut.result != 0)
-          migrateStatus = "FAIL"
+          migrateStatus = "MIGRATION FAILED"
 
         return { result : 0, onAfterReturn: { setGlobals: { migrateStatus: migrateStatus } } };
         
