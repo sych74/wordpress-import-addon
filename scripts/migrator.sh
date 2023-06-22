@@ -315,6 +315,13 @@ importProject(){
   setWPconfigVariable WP_DEBUG "false"
   updateSiteUrl $SITE_URL
   updateHomeUrl $SITE_URL
+  
+  COMPUTE_TYPE=$(grep "COMPUTE_TYPE=" /etc/jelastic/metainf.conf | cut -d"=" -f2)
+  if [[ ${COMPUTE_TYPE} == *"lemp"* || ${COMPUTE_TYPE} == *"nginx"* ]] ; then
+    wget https://raw.githubusercontent.com/jelastic-jps/wordpress-cluster/v2.2.0/configs/wordpress/wp-jelastic.php -O /var/www/webroot/ROOT/wp-jelastic.php
+    mv /var/www/webroot/ROOT/wp-config.php /tmp; sed -i "s/.*'wp-settings.php';.*/require_once ABSPATH . 'wp-jelastic.php';\n&/" /tmp/wp-config.php; mv /tmp/wp-config.php /var/www/webroot/ROOT;
+  fi
+  
   flushCache
   echo "{\"result\": 0}"
 }
