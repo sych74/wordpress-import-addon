@@ -352,7 +352,7 @@ actions:
         resp = jelastic.env.control.ExecCmdById(envName, session, containerID, toJSON([{ command: 'cat /home/jelastic/migrator/projectsPHP.json' }]), true);
         if ( resp.result != 0 ) return resp;
 
-        // Getting disk usage for project
+        // Getting disk usage for project by project ID
         function getRemoteProjectSizeById(projectId) {
           const defaultSize = 20;
           var command = "bash /home/jelastic/migrator/migrator.sh getProjectSize --instance-id=" + projectId; 
@@ -363,22 +363,32 @@ actions:
           return size;
         }
 
+        // Getting project name by project ID
+        function getProjectNameById(projectId) {
+          var command = "bash /home/jelastic/migrator/migrator.sh getProjectName --instance-id=" + projectId; 
+          var resp = api.env.control.ExecCmdById(envName, session, containerID, toJSON([{ "command": command }]), true);
+          if (resp.result != 0) return resp;
+          return resp.responses[0].out;
+        }
+
         // Creating envs and migration projects
         let tableName = "${globals.tableName}";
-        let envName, createObject, diskLimit;
+        let projectEnvName, createObject, diskLimit, projectName;
         let envNames = [];
         for (var i = 0, n = projectList.length; i < n; i ++) {
           projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
           parts = projectPHPverion.split(".");     
           enginePHP = "php" + parts.slice(0, 2).join(".");
           diskLimit = getRemoteProjectSizeById(projectList[i]);
-          envName = generateEnvName();  
-          envNames.push(envName);
+          projectName = getProjectNameById(projectList[i]);
+          projectEnvName = generateEnvName();  
+          envNames.push(projectEnvName);
           createObject = api.data.base.CreateObject(tableName, {
-            envName: envName,
+            envName: projectEnvName,
             uid: targetUID,
             status: "IN PROGRESS",
-            projectId:  projectList[i]
+            projectId:  projectList[i],
+            projectName: projectName
           });   
           if (createObject.result != 0) return createObject;
           
@@ -386,7 +396,7 @@ actions:
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
             settings: {
               "master_env": envName,
-              "env_name": envName,
+              "env_name": projectEnvName,
               "php_engine": enginePHP,
               "project_id": projectList[i],
               "wpenv_file_content": wpenv_file_content.body,
