@@ -56,7 +56,8 @@ actions:
             "cdn-addon": "false",
             "php_engine": '${settings.php_engine}',
             "le-addon": "false",
-            "success_email": "false"
+            "success_email": "false",
+            "diskLimit": '${settings.diskLimit:20}'
           }      
         });
       if (resp.result != 0) {

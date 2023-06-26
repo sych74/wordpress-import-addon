@@ -352,17 +352,28 @@ actions:
         resp = jelastic.env.control.ExecCmdById(envName, session, containerID, toJSON([{ command: 'cat /home/jelastic/migrator/projectsPHP.json' }]), true);
         if ( resp.result != 0 ) return resp;
 
+        // Getting disk usage for project
+        function getRemoteProjectSizeById(projectId) {
+          const defaultSize = 20;
+          var command = "bash /home/jelastic/migrator/migrator.sh getProjectSize --instance-id=" + projectId; 
+          var resp = api.env.control.ExecCmdById(envName, session, containerID, toJSON([{ "command": command }]), true);
+          if (resp.result != 0) return resp;
+          var remoteSize = resp.responses[0].out;
+          var size = Math.ceil(remoteSize) + defaultSize;
+          return size;
+        }
+
         // Creating envs and migration projects
         let tableName = "${globals.tableName}";
-        let envName, createObject;
+        let envName, createObject, diskLimit;
         let envNames = [];
         for (var i = 0, n = projectList.length; i < n; i ++) {
           projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
           parts = projectPHPverion.split(".");     
           enginePHP = "php" + parts.slice(0, 2).join(".");
+          diskLimit = getRemoteProjectSizeById(projectList[i]);
           envName = generateEnvName();  
           envNames.push(envName);
-          
           createObject = api.data.base.CreateObject(tableName, {
             envName: envName,
             uid: targetUID,
@@ -382,6 +393,7 @@ actions:
               "projects_file_content": projects_file_content.body,
               "subscriptionId": subscriptionId,
               "userSession": "${globals.userSession}",
+              "diskLimit": diskLimit,
               "targetUID": targetUID
             }
           });

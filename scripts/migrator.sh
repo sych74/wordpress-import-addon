@@ -381,6 +381,28 @@ getProjectName(){
   echo $projectName
 }
 
+getProjectSize(){
+  for i in "$@"; do
+    case $i in
+      --instance-id=*)
+      INSTANCE_ID=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+
+  source ${WP_ENV}
+  SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
+
+  local project_path=$(getArgFromJSON $INSTANCE_ID "fullPath")
+  local getRemoteDiskSize="${SSH} \"du -sb ${project_path} \""
+  local remote_disk_size=$(execSshReturn "${getRemoteDiskSize}" "Get remote disk size for ${project_path} installation")
+  echo $remote_disk_size | awk '{size_gb = $1 / 1024**3; printf "%.2f\n", size_gb}'
+}
+
 checkSSHconnection(){
   local command="${SSH} \"exit 0\""
   local message="Checking SSH connection to remote host"
@@ -483,6 +505,10 @@ case ${1} in
 
     getProjectName)
       getProjectName "$@"
+      ;;
+      
+    getProjectSize)
+      getProjectSize "$@"
       ;;
 
     importProject)
