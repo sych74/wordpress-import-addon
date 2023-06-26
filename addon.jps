@@ -282,6 +282,7 @@ onInstall:
   - deployProjects
   - updateProjectStatuses
   - signout
+  - generateReport
 
 globals:
   migration_dir: /home/jelastic/migrator
@@ -519,9 +520,9 @@ actions:
       return jelastic.users.authentication.Signout("cluster", "${globals.userSession");
 
   generateReport:
-    - script: |
+    script: |
         var tableName = "${globals.tableName}";
-        var envName = '${settings.envName}',
+        var envName = '${settings.envName}';
         var resp = api.data.base.GetObjectsByCriteria(appid, session, tableName);
         var objects = resp.objects;
 
