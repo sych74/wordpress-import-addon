@@ -517,5 +517,52 @@ actions:
     script: |
       // Signout
       return jelastic.users.authentication.Signout("cluster", "${globals.userSession");
-      
+
+  generateReport:
+    - script: |
+        var tableName = "${globals.tableName}";
+        var envName = '${settings.envName}',
+        var resp = api.data.base.GetObjectsByCriteria(appid, session, tableName);
+        var objects = resp.objects;
+
+        var htmlTable = '<table style="width:100%; border-collapse: collapse; border: 1px solid black;">' +
+          '<thead><tr>' +
+          '<th style="width:5%; border: 1px solid black;">uid</th>' +
+          '<th style="width:10%; border: 1px solid black;">envName</th>' +
+          '<th style="width:10%; border: 1px solid black;">projectName</th>' +
+          '<th style="width:5%; border: 1px solid black;">projectId</th>' +
+          '<th style="width:15%; border: 1px solid black;">status</th>' +
+          '<th style="width:30%; border: 1px solid black;">error</th>' +
+          '</tr></thead>' +
+          '<tbody>';
+
+        objects.forEach(function(rowData) {
+        htmlTable += '<tr>' +
+          '<td style="border: 1px solid black;">' + rowData.uid + '</td>' +
+          '<td style="border: 1px solid black;">' + rowData.envName + '</td>' +
+          '<td style="border: 1px solid black;">' + rowData.projectName + '</td>' +
+          '<td style="border: 1px solid black;">' + rowData.projectId + '</td>' +
+          '<td style="border: 1px solid black;">' + rowData.status + '</td>' +
+          '<td style="border: 1px solid black;">' + rowData.error + '</td>' +
+          '</tr>';
+        });
+
+        htmlTable += '</tbody></table>';
+
+        var htmlContent = '<html>' +
+          '<head><title>Migration status</title></head>' +
+          '<body>' +
+          '<h1>Migration status</h1>' +
+          htmlTable +
+          '</body>' +
+          '</html>';
+    
+        return api.environment.file.Write({
+          envName: envName,
+          session: session,
+          path: "/var/www/webroot/ROOT/index.html",
+          nodeGroup: "cp",
+          body: htmlTable
+        })
+
 success: ${globals.successText}
