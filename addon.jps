@@ -371,6 +371,7 @@ actions:
           projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
           parts = projectPHPverion.split(".");     
           enginePHP = "php" + parts.slice(0, 2).join(".");
+          diskLimit = getRemoteProjectSizeById(projectList[i]);
           envName = generateEnvName();  
           envNames.push(envName);
           createObject = api.data.base.CreateObject(tableName, {
@@ -380,8 +381,6 @@ actions:
             projectId:  projectList[i]
           });   
           if (createObject.result != 0) return createObject;
-          
-          diskLimit = getRemoteProjectSizeById(projectList[i]);
           
           actions.push({
             jps: "${baseUrl}/scripts/createEnvironment.jps?_r=${fn.random}",
