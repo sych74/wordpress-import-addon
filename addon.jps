@@ -9,7 +9,7 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 6967;
   
-  const envName = "env-9594898";
+  const envName = "env-9556087";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -412,7 +412,7 @@ actions:
         'marketplace.jps.install': actions 
         }, {
           'setGlobals': {
-            envNames: envNames
+            envNames: envNames.join(",")
           }
         }] };
 
@@ -427,23 +427,36 @@ actions:
         let from = 0;
         let resp, imports = [], out, item, resource, subResource;
         let successEnvs = [], failedEnvs = [];
+        let preparedEnvNames = '${globals.envNames}'.split(',');
         let criteria = {
-          envName: "${globals.envNames}"
-        };
+          envName: preparedEnvNames
+        };        
 
-        function formatSuccessText(success, failed) {
-          let text = "";
-          if (success.length) {
-            text = "WordPress migration has been finished successfully for the following environment names: \n * " + successEnvs.join(" ").replace(/\s+/g, "\n * ")
-          }
-
-          if (failed.length) {
-            text += "WordPress migration has been failed for the following environment names: \n * " + failed.join(" ").replace(/\s+/g, "\n * ")
-          }
-
-          return text;
+        function getProjectNameByEnvName(envName){
+          var projectName = '';
+          var resp = base.GetObjectsByCriteria(appid, session, tableName, {envName: envName}, 0, 1);
+          if (resp.result != 0) return resp;
+          var data = resp.objects[0] || [];
+          if (data.hasOwnProperty('projectName'))
+            projectName = " - " + data.projectName;
+          return projectName;
         }
 
+        function formatSuccessText(success, failed) {
+          let text = "The following WordPress project(s) have been migrated: \n";
+          if (success.length) {
+            for (var i = 0, n = successEnvs.length; i < n; i ++) {
+              text += getProjectNameByEnvName(successEnvs[i]) + " -> " + successEnvs[i] + " (SUCCESS) \n";
+            }
+          }
+          if (failed.length) {
+            for (var i = 0, n = failedEnvs.length; i < n; i ++) {
+              text += getProjectNameByEnvName(failedEnvs[i]) + " -> " + failedEnvs[i] + " (FAILED) \n";
+            }
+          }
+          return text;
+        }
+        
         while (true) {
           resp = base.GetObjectsByCriteria(appid, session, tableName, criteria, from, count);
           from += count;
