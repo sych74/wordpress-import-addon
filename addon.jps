@@ -382,6 +382,7 @@ actions:
               "projects_file_content": projects_file_content.body,
               "subscriptionId": subscriptionId,
               "userSession": "${globals.userSession}",
+              "diskLimit": diskLimit,
               "targetUID": targetUID
             }
           });
