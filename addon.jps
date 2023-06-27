@@ -9,7 +9,7 @@ onBeforeInit: |
   // CHANGE VARIABLES
   const targetUID = 6967;
   
-  const envName = "env-9556087";
+  const envName = "env-6061762";
   const ssh_host = "198.244.136.252";
   const ssh_port = 22;
   const ssh_user = "root";
@@ -349,12 +349,18 @@ actions:
         var projects_file_content = jelastic.env.file.Read(envName, session, '${globals.projects_file}', null, null, containerID);        
         if (projects_file_content.result != 0) return projects_file_content;
         
-        // Getting php version for each of projects
-        resp = jelastic.env.control.ExecCmdById(envName, session, containerID, toJSON([{ command: 'cat /home/jelastic/migrator/projectsPHP.json' }]), true);
-        if ( resp.result != 0 ) return resp;
+        // Getting php version for project by ID
+        function getProjectPhpVersionById(projectId) {
+          var command = "bash /home/jelastic/migrator/migrator.sh getProjectPhpVersion --instance-id=" + projectId; 
+          var resp = api.env.control.ExecCmdById(envName, session, containerID, toJSON([{ "command": command }]), true);
+          if (resp.result != 0) return resp;
+          var projectPHPverion = resp.responses[0].out;
+          var parts = projectPHPverion.split(".");     
+          return "php" + parts.slice(0, 2).join(".");
+        }
 
         // Getting disk usage for project by project ID
-        function getRemoteProjectSizeById(projectId) {
+        function getProjectSizeById(projectId) {
           const defaultSize = 20;
           var command = "bash /home/jelastic/migrator/migrator.sh getProjectSize --instance-id=" + projectId; 
           var resp = api.env.control.ExecCmdById(envName, session, containerID, toJSON([{ "command": command }]), true);
@@ -377,10 +383,8 @@ actions:
         let projectEnvName, createObject, diskLimit, projectName;
         let envNames = [];
         for (var i = 0, n = projectList.length; i < n; i ++) {
-          projectPHPverion = JSON.parse(resp.responses[0].out).find(x => x.id === parseInt(projectList[i])).php_version;
-          parts = projectPHPverion.split(".");     
-          enginePHP = "php" + parts.slice(0, 2).join(".");
-          diskLimit = getRemoteProjectSizeById(projectList[i]);
+          enginePHP = getProjectPhpVersionById(projectList[i]);
+          diskLimit = getProjectSizeById(projectList[i]);
           projectName = getProjectNameById(projectList[i]);
           projectEnvName = generateEnvName();  
           envNames.push(projectEnvName);
