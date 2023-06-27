@@ -15,6 +15,7 @@ WP_PROJECTS_LIST_JSON="projects.json"
 WP_PROJECTS_LIST_PHP_JSON="projectsPHP.json"
 WP_PROJECTS_LIST="projects.list"
 WP_CLI="${BASE_DIR}/wp"
+DEFAULT_PHP_VERSION="8.0.1"
 
 trap "execResponse '${FAIL_CODE}' 'Please check the ${RUN_LOG} log file for details.'; exit 0" TERM
 export TOP_PID=$$
@@ -280,14 +281,14 @@ importProject(){
         ;;
     esac
   done
-  
+
   execAction "installWP_CLI" 'Install WP-CLI'
 
   source ${WP_ENV}
   SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
 
   WPT=$(getWPtoolkitVersion)
-  
+
   ### Backuping original wp-config.php to temporary dir
   [ ! -f ${BASE_DIR}/wp-config.php ] && cp ${WP_CONFIG} ${BASE_DIR}
 
@@ -315,13 +316,13 @@ importProject(){
   setWPconfigVariable WP_DEBUG "false"
   updateSiteUrl $SITE_URL
   updateHomeUrl $SITE_URL
-  
+
   COMPUTE_TYPE=$(grep "COMPUTE_TYPE=" /etc/jelastic/metainf.conf | cut -d"=" -f2)
   if [[ ${COMPUTE_TYPE} == *"lemp"* || ${COMPUTE_TYPE} == *"nginx"* ]] ; then
     wget https://raw.githubusercontent.com/jelastic-jps/wordpress-cluster/v2.2.0/configs/wordpress/wp-jelastic.php -O /var/www/webroot/ROOT/wp-jelastic.php
     mv /var/www/webroot/ROOT/wp-config.php /tmp; sed -i "s/.*'wp-settings.php';.*/require_once ABSPATH . 'wp-jelastic.php';\n&/" /tmp/wp-config.php; mv /tmp/wp-config.php /var/www/webroot/ROOT;
   fi
-  
+
   flushCache
   echo "{\"result\": 0}"
 }
@@ -403,6 +404,32 @@ getProjectSize(){
   echo $remote_disk_size | awk '{size_gb = $1 / 1024**3; printf "%.2f\n", size_gb}'
 }
 
+getProjectPhpVersion(){
+  for i in "$@"; do
+    case $i in
+      --instance-id=*)
+      INSTANCE_ID=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+
+  source ${WP_ENV}
+  SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
+
+  local command="${SSH} \"${WPT} --wp-cli -instance-id ${INSTANCE_ID}  -- eval 'echo PHP_VERSION;'\""
+  local message="Getting PHP version by WP TOOLKIT on remote host for instance-id ${INSTANCE_ID}"
+  local action_to_base64=$(echo $command|base64 -w 0)
+  stdout=$( { sh -c "$(echo ${action_to_base64}|base64 -d)"; } 2>&1 ) && { echo ${stdout}; log "${message}...done"; } || {
+    log "${message}...failed\nSet default PHP version $DEFAULT_PHP_VERSION\n";
+    echo $DEFAULT_PHP_VERSION;
+  }
+}
+
+
 checkSSHconnection(){
   local command="${SSH} \"exit 0\""
   local message="Checking SSH connection to remote host"
@@ -449,7 +476,7 @@ getRemoteProjects(){
   done
 
   source ${WP_ENV}
-  
+
   if [ "x${INPUT_SSH_USER}" != "x${SSH_USER}" ] || \
      [ "x${INPUT_SSH_PASSWORD}" != "x${SSH_PASSWORD}" ] || \
      [ "x${INPUT_SSH_PORT}" != "x${SSH_PORT}" ] || \
@@ -459,9 +486,10 @@ getRemoteProjects(){
       echo "export SSH_PASSWORD=${INPUT_SSH_PASSWORD}" >> $WP_ENV;
       echo "export SSH_PORT=${INPUT_SSH_PORT}" >> $WP_ENV;
       echo "export SSH_HOST=${INPUT_SSH_HOST}" >> $WP_ENV;
-  
+
       source ${WP_ENV}
       SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
+
       checkSSHconnection
       WPT=$(getWPtoolkitVersion)
 
@@ -471,33 +499,32 @@ getRemoteProjects(){
       else
         echo ------------------------------
       fi
-      
+
       project_list=$(cat ${BASE_DIR}/${WP_PROJECTS_LIST_JSON});
-      project_list_php=$(jq -n '[]');
+#      project_list_php=$(jq -n '[]');
 
-      for project in $(echo "${project_list}" | jq -r '.[] | @base64'); do
-        _jq() {
-        echo "${project}" | base64 --decode | jq -r "${1}"
-        }
-        id=$(_jq '.id')
-        php_version=$(getRemotePHPversionWPT $id)
-        project_list_php=$(echo $project_list_php | jq \
-          --argjson id $id \
-          --arg php_version "$php_version" \
-        '. += [{"id": $id, "php_version": $php_version}]')
-      done
-
-      echo $project_list_php > ${BASE_DIR}/${WP_PROJECTS_LIST_PHP_JSON}
+#      for project in $(echo "${project_list}" | jq -r '.[] | @base64'); do
+#        _jq() {
+#        echo "${project}" | base64 --decode | jq -r "${1}"
+#        }
+#        id=$(_jq '.id')
+#        php_version=$(getRemotePHPversionWPT $id)
+#        project_list_php=$(echo $project_list_php | jq \
+#          --argjson id $id \
+#          --arg php_version "$php_version" \
+#        '. += [{"id": $id, "php_version": $php_version}]')
+#      done
+#      echo $project_list_php > ${BASE_DIR}/${WP_PROJECTS_LIST_PHP_JSON}
   fi
- 
+
   [[ "x${FORMAT}" == "xjson" ]] && { getProjectList --format=json; } || { getProjectList; }
 
 }
 
 case ${1} in
     getRemoteProjects)
-        getRemoteProjects "$@"
-        ;;
+      getRemoteProjects "$@"
+      ;;
 
     getProjectList)
       getProjectList "$@"
@@ -506,7 +533,11 @@ case ${1} in
     getProjectName)
       getProjectName "$@"
       ;;
-      
+
+    getProjectPhpVersion)
+      getProjectPhpVersion "$@"
+      ;;
+
     getProjectSize)
       getProjectSize "$@"
       ;;
