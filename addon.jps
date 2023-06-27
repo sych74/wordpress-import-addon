@@ -472,12 +472,21 @@ actions:
             if (resp.result != 0) return resp;
             if (resp.responses && resp.responses[0] && resp.responses[0].out) {
               out = resp.responses[0].out;
-              resp = base.SetProperty(appid, session, tableName, imports[i].id, "status", out)
+              resp = base.SetProperty(appid, session, tableName, imports[i].id, "status", out);
               if (resp.result != 0) return resp;
               if (out == "SUCCESSFULLY MIGRATED") {
                 successEnvs.push(imports[i].envName);
               } else if (out == "MIGRATION FAILED") {
                 failedEnvs.push(imports[i].envName);
+                
+                resp = api.env.control.ExecCmdByGroup(imports[i].envName, userSession, CP, toJSON([{command: "grep '.failed' /home/jelastic/migrator/migrator.log "}]), true, false);
+                if (resp.result != 0) return resp;
+                if (resp.responses && resp.responses[0] && resp.responses[0].out) {
+                  out = resp.responses[0].out;
+                  resp = base.SetProperty(appid, session, tableName, imports[i].id, "error", out);
+                  if (resp.result != 0) return resp;
+                }
+
                 resp = api.billing.subscription.GetSubscriptions({
                   appid: "cluster", 
                   session: userSession, 

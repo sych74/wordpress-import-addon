@@ -58,7 +58,6 @@ actions:
       let tableName = "${globals.tableName}";
       let resp = api.data.base.GetType(tableName);
 
-      return resp;
       if (resp.result == 0) {
         return api.data.base.UndefineType(tableName);
       }
