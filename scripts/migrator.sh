@@ -495,7 +495,7 @@ getRemoteProjects(){
 
       if [[ "$WPT" == *wp-toolkit* ]]; then
         getRemoteProjectListWPT
-        updateVariable WPT ${WPT}
+        updateVariable WPT "${WPT}"
       else
         echo ------------------------------
       fi
