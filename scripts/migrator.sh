@@ -165,7 +165,7 @@ addVariable(){
 updateVariable(){
   local var=$1
   local value=$2
-  grep -q $var $WP_ENV && { sed -i "s/${var}.*/${var}=${value}/" $WP_ENV; } || { echo "${var}=${value}" >> $WP_ENV; }
+  grep -q $var $WP_ENV && { sed -i "s/${var}.*/${var}='${value}'/" $WP_ENV; } || { echo "${var}='${value}'" >> $WP_ENV; }
 }
 
 getArgFromJSON(){
@@ -482,10 +482,10 @@ getRemoteProjects(){
      [ "x${INPUT_SSH_PORT}" != "x${SSH_PORT}" ] || \
      [ "x${INPUT_SSH_HOST}" != "x${SSH_HOST}" ]; then
 
-      echo "export SSH_USER=${INPUT_SSH_USER}" > $WP_ENV;
-      echo "export SSH_PASSWORD=${INPUT_SSH_PASSWORD}" >> $WP_ENV;
-      echo "export SSH_PORT=${INPUT_SSH_PORT}" >> $WP_ENV;
-      echo "export SSH_HOST=${INPUT_SSH_HOST}" >> $WP_ENV;
+      echo "export SSH_USER='${INPUT_SSH_USER}'" > $WP_ENV;
+      echo "export SSH_PASSWORD='${INPUT_SSH_PASSWORD}'" >> $WP_ENV;
+      echo "export SSH_PORT='${INPUT_SSH_PORT}'" >> $WP_ENV;
+      echo "export SSH_HOST='${INPUT_SSH_HOST}'" >> $WP_ENV;
 
       source ${WP_ENV}
       SSH="timeout 300 sshpass -p ${SSH_PASSWORD} ssh -T -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} -p${SSH_PORT}"
@@ -495,7 +495,7 @@ getRemoteProjects(){
 
       if [[ "$WPT" == *wp-toolkit* ]]; then
         getRemoteProjectListWPT
-        updateVariable WPT ${WPT}
+        updateVariable WPT "${WPT}"
       else
         echo ------------------------------
       fi
