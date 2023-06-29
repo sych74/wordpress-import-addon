@@ -532,7 +532,7 @@ actions:
   signout:
     script: |
       // Signout
-      return jelastic.users.authentication.Signout("cluster", "${globals.userSession");
+      return jelastic.users.authentication.Signout("cluster", "${globals.userSession}");
 
   generateReport:
     script: |
