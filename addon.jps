@@ -494,21 +494,23 @@ actions:
                 resp = api.billing.subscription.GetSubscriptions({
                   appid: "cluster", 
                   session: userSession, 
-                  id: imports[i].subscriptionId,
+                  id: '${settings.subscription}',
                   expandFields: "*"
                 });
-                
+
                 if (resp.result != 0) return resp;
                 if (resp.array && resp.array[0] && resp.array[0].items && resp.array[0].items[0]) {
                   item = resp.array[0].items[0];
-                  if (item.id == imports[i].subscriptionId && item.resources.length) {
+
+                  if (item.id == parseInt('${settings.subscription}') && item.resources.length) {
                     for (let k = 0, l = item.resources.length; k < l; k++) {
                       subResource = JSON.parse(item.resources[k].resources);
                       
                       if (subResource.length) {
-                        for (let m = 0, n = subResource.length; m < n; m++) {
+                        for (let m = 0, v = subResource.length; m < v; m++) {
                           if (subResource[m] && subResource[m].name == imports[i].envName) {
-                            resp = api.billing.subscription.UninstallProduct(appid, userSession, imports[i].subscriptionId, 76, item.resources[k].id, item.resources[k].uniqueName.replace(/-.*/, ""));
+
+                            resp = api.billing.subscription.UninstallProduct(appid, userSession, parseInt('${settings.subscription}'), item.id, item.resources[k].id, item.resources[k].uniqueName.replace(/-.*/, ""));
                             if (resp.result != 0) return resp;
                           }
                         }                        
