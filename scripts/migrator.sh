@@ -190,6 +190,23 @@ createRemoteDbBackupWPT(){
   execSshAction "$command" "$message"
 }
 
+getRemoteDBnameWPT(){
+  local project=$1;
+  local command="${SSH} \"${WPT} --wp-cli -instance-id ${project}  -- config get DB_NAME\""
+  local message="Getting DB name by WP TOOLKIT on remote host for instance-id ${project}"
+  local output=$(execSshReturn "$command" "$message")
+  echo $output
+}
+
+createRemoteDbBackupMysqlDump(){
+  local db_name="$1";
+  local dir="$2";
+  local command="${SSH} \"mysqldump ${db_name} > ${dir}/${DB_BACKUP} \""
+  local message="Creating database backup by mysqldump on remote host for db name ${db_name}"
+  local output=$(execSshAction "$command" "$message")
+  echo $output
+}
+
 getRemotePHPversionWPT(){
   local project=$1;
   local command="${SSH} \"${WPT} --wp-cli -instance-id ${project}  -- eval 'echo PHP_VERSION;'\""
@@ -298,8 +315,11 @@ importProject(){
   ### Delete custom define wp-jelastic.php
   sed -i '/wp-jelastic.php/d' ${WP_CONFIG}
 
-  createRemoteDbBackupWPT $INSTANCE_ID
+  #createRemoteDbBackupWPT $INSTANCE_ID
   REMOTE_DIR=$(getArgFromJSON $INSTANCE_ID "fullPath")
+  local remote_db_name=$(getRemoteDBnameWPT $INSTANCE_ID)
+  createRemoteDbBackupMysqlDump "$remote_db_name" "$REMOTE_DIR"
+
   execAction "downloadProject $REMOTE_DIR" "Downloading $REMOTE_DIR from remote host to ${BACKUP_DIR}"
   addVariable DB_USER $(getWPconfigVariable DB_USER)
   addVariable DB_PASSWORD $(getWPconfigVariable DB_PASSWORD)
