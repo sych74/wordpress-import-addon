@@ -1,7 +1,7 @@
 type: install
-name: WordPress Migrator Env
+name: WordPress Migrator Environment
 logo: /images/migration-logo-readme.svg
-description: Migrate your web site from remote WordPress installation
+description: Create a Migrator Environment to handle WordPress project(s) migration from the remote Plesk / cPanel to the Virtuozzo Application Platform for WordPress.
 
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/master
 

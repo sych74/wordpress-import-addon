@@ -1,7 +1,7 @@
 type: install
-name: WordPress Migrator
+name: WordPress Migrator Add-On
 logo: /images/migrator-logo-addon.svg
-description: Migrate your web site from remote WordPress installation
+description: Migrate your WordPress projects from remote Plesk / cPanel to the Virtuozzo Application Platform for WordPress. This add-on automatically fetches the list of remote projects to help you choose the ones for migration.
 
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/master
 
@@ -157,12 +157,12 @@ onBeforeInit: |
   }, {
     "caption": "Subscription",
     "type": "displayfield",
-    "tooltip": "Select the subscription to which you want to import",
+    "tooltip": "Select the subscription for the migrated remote projects.",
     "required": false
   }, {
     "caption": "Subscription",
     "type": "list",
-    "tooltip": "Select the subscription to which you want to import",
+    "tooltip": "Select the subscription for the migrated remote projects.",
     "name": "subscription",
     "required": true,
     "hideLabel": true,
@@ -170,7 +170,7 @@ onBeforeInit: |
   }, {
     "type": "separator"
   }, {
-    "caption": "Display projects",
+    "caption": "Display Projects",
     "type": "list",
     "name": "Display project",
     "required": true,
@@ -184,12 +184,12 @@ onBeforeInit: |
       {
         "caption": "Projects",
         "type": "displayfield",
-        "tooltip": "Select the project which you want to import",          
+        "tooltip": "Select the project(s) that you want to migrate.",          
         "required": false
       },{
         "caption": "Projects",
         "type": "list",
-        "tooltip": "Select the project which you want to import",          
+        "tooltip": "Select the project(s) that you want to migrate.",          
         "name": "projects",
         "required": true,
         "multiSelect": true,
@@ -201,19 +201,19 @@ onBeforeInit: |
         {
           "caption": "Source User ID",
           "type": "list",
-          "tooltip": "Select the project which you want to import",          
+          "tooltip": "Select a specific remote user (ID) you want to migrate from.",          
           "name": "users",
           "required": true,
           "values": ownerList
         },{
           "caption": "Projects",
           "type": "displayfield",
-          "tooltip": "Select the project which you want to import",          
+          "tooltip": "Select a specific remote user (ID) you want to migrate from.",          
           "required": false
         },{
           "caption": "Projects",
           "type": "list",
-          "tooltip": "Select the project which you want to import",          
+          "tooltip": "Select a specific remote user (ID) you want to migrate from.",          
           "name": "projects",
           "required": true,
           "multiSelect": true,
