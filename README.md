@@ -1,5 +1,5 @@
 <p align="center">
-<img style="padding: 0 15px; float: left;" src="images/migrate-logo.svg" width="70">
+<img style="padding: 0 15px; float: left;" src="images/migration-logo-readme.svg" width="70">
 </p>
 
 # WordPress Migrator 
