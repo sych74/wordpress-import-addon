@@ -3,7 +3,7 @@ name: WordPress Migrator Environment
 logo: /images/migration-logo-readme.svg
 description: Create a Migrator Environment to handle WordPress project(s) migration from the remote Plesk / cPanel to the Virtuozzo Application Platform for WordPress.
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/master
+baseUrl: https://raw.githubusercontent.com/sych74/wordpress-import-addon/WP-598
 
 nodes:
   - nodeType: nginxphp
