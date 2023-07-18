@@ -3,7 +3,7 @@ name: WordPress Migrator Add-On
 logo: /images/migrator-logo-addon.svg
 description: Migrate your WordPress projects from remote Plesk / cPanel to the Virtuozzo Application Platform for WordPress. This add-on automatically fetches the list of remote projects to help you choose the ones for migration.
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/wordpress-import-addon/master
+baseUrl: https://raw.githubusercontent.com/sych74/wordpress-import-addon/WP-598
 
 onBeforeInit: | 
   // CHANGE VARIABLES
